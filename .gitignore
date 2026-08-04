@@ -16,3 +16,8 @@ test-results/
 .docx-render/
 tmp/
 *.log
+
+# Local assistant instructions and Supabase CLI state
+CLAUDE.md
+GEMINI.md
+supabase/.temp/
