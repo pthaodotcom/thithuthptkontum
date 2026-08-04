@@ -1,12 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/kiem-tra-san-sang",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/xu-ly-hang-doi",
-      "schedule": "* * * * *"
-    }
-  ]
-}
+{}
