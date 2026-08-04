@@ -16,7 +16,7 @@ function thongBaoLoi(message:string){
     NGAY_THI_2_PHAI_SAU_NGAY_THI_1:"Ngày thi thứ hai phải sau ngày thi thứ nhất.",
     KHONG_TIM_THAY_DOT_THI:"Không tìm thấy đợt thi.",
     PHAI_CHON_IT_NHAT_MOT_LOP:"Phải chọn ít nhất một lớp tham gia đợt thi.",
-    CHUA_DU_BON_KHUNG_GIO:"Chưa cấu hình đủ 4 khung giờ chuẩn — vào mục Khung giờ chuẩn để bổ sung.",
+    CHUA_DU_BON_KHUNG_GIO:"Chưa cấu hình đủ 4 khung giờ chuẩn — vào mục Quản lý khung giờ ca thi để bổ sung.",
     PHAI_CO_DUNG_HAI_MON_BAT_BUOC:"Phải có đúng 2 môn Bắt buộc đang dùng (mỗi ca thi 1 và 2 gán đúng 1 môn) — vào mục Môn học để kiểm tra Loại môn và Trạng thái.",
   };
   const code=Object.keys(messages).find(x=>message.includes(x));

@@ -1,2 +1,2 @@
-import MonitorClient from "./MonitorClient";
-export default function GiamSatPage(){return <MonitorClient/>}
+import { redirect } from "next/navigation";
+export default function GiamSatPage(){redirect("/quan-ly-vi-pham")}

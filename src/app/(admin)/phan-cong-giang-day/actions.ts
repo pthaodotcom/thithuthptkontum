@@ -44,6 +44,7 @@ export async function luuPhanCong(giaoVienId: string, monId: string, lopIds: str
     if (error) return { success: false, error: error.message };
   }
   revalidatePath("/phan-cong-giang-day");
+  revalidatePath("/tai-khoan");
   return { success: true };
 }
 
@@ -99,5 +100,6 @@ export async function importPhanCong(rows: DongImportPhanCong[]) {
     else loi.push({ dong: 0, maLoi: "LOI_LUU", chiTiet: result.error || giaoVienId });
   }
   revalidatePath("/phan-cong-giang-day");
+  revalidatePath("/tai-khoan");
   return { thanhCong, loi };
 }

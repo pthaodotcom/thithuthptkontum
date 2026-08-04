@@ -27,7 +27,7 @@ export default async function Home() {
         .maybeSingle();
       redirect(monQuanLy ? "/khung-chuyen-de" : "/soan-cau-hoi");
     case "HocSinh":
-      redirect("/ho-so");
+      redirect("/ky-thi");
     default:
       redirect("/dang-nhap");
   }

@@ -9,7 +9,7 @@ import { DashboardShell, type DashboardNavGroup } from "@/components/dashboard/d
 const navGroups: DashboardNavGroup[] = [
   {
     items: [
-      { href: "/ho-so", label: "Lịch thi", icon: CalendarDays },
+      { href: "/ky-thi", label: "Kỳ thi", icon: CalendarDays },
       { href: "/ket-qua", label: "Kết quả", icon: BarChart3 },
       { href: "/ho-so/doi-mon-tu-chon", label: "Đổi môn tự chọn", icon: Repeat },
     ],

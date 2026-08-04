@@ -15,7 +15,7 @@ export default async function KhungGioPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Khung giờ chuẩn</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Quản lý khung giờ ca thi</h1>
         <p className="text-muted-foreground text-sm mt-1">4 ca thi cố định: Ngày 1 (Sáng/Chiều), Ngày 2 (Sáng/Chiều). Bấm vào ô để chỉnh sửa.</p>
       </div>
       <KhungGioClient initialData={data || []} />

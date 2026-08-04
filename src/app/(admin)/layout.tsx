@@ -6,13 +6,12 @@ import {
   Users,
   UserCog,
   UserRoundCheck,
-  ClipboardList,
   GraduationCap,
   ScrollText,
   BarChart3,
   Mail,
   CalendarDays,
-  MonitorCheck,
+  ShieldAlert,
   UserRoundSearch,
 } from "lucide-react";
 
@@ -24,7 +23,7 @@ const navGroups: DashboardNavGroup[] = [
     label: "Danh mục",
     items: [
       { href: "/mon-hoc", label: "Môn học", icon: BookOpen },
-      { href: "/khung-gio", label: "Khung giờ chuẩn", icon: Clock },
+      { href: "/khung-gio", label: "Quản lý khung giờ ca thi", icon: Clock },
       { href: "/lop-hoc", label: "Quản lý lớp", icon: Users },
     ],
   },
@@ -35,14 +34,13 @@ const navGroups: DashboardNavGroup[] = [
       { href: "/tai-khoan?loai=HocSinh", label: "Quản lý học sinh", icon: GraduationCap },
       { href: "/tai-khoan?loai=GiaoVien", label: "Quản lý giáo viên", icon: UserCog },
       { href: "/to-truong-bo-mon", label: "Bổ nhiệm tổ trưởng", icon: UserRoundCheck },
-      { href: "/phan-cong-giang-day", label: "Phân công dạy", icon: ClipboardList },
     ],
   },
   {
     label: "Kỳ thi",
     items: [
       { href: "/dot-thi", label: "Quản lý đợt thi", icon: CalendarDays },
-      { href: "/giam-sat-ca-thi", label: "Giám sát ca thi", icon: MonitorCheck },
+      { href: "/quan-ly-vi-pham", label: "Quản lý vi phạm", icon: ShieldAlert },
     ],
   },
   {
