@@ -21,3 +21,5 @@ tmp/
 CLAUDE.md
 GEMINI.md
 supabase/.temp/
+
+.vercel
