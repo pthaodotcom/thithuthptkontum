@@ -288,10 +288,10 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
         </>
       )}
 
-      {/* THANH CÔNG CỤ TÌM KIẾM & BỘ LỌC (GỌN GÀNG, KHÔNG PHỒNG) */}
+      {/* THANH CÔNG CỤ TÌM KIẾM & BỘ LỌC (KHÔNG BỌC KHỐI CHỮ NHẬT TRẮNG) */}
       {!!initialData.length && (
-        <section className="rounded-md border border-border bg-card p-3.5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+        <div className="space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Filter className="h-3.5 w-3.5 text-primary" />
               <span>Tra cứu & Bộ lọc bài thi</span>
@@ -314,7 +314,7 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
             </div>
           </div>
 
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {/* Ô tìm kiếm từ khóa */}
             <div className="relative lg:col-span-2">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -322,7 +322,7 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
                 placeholder="Tìm môn, đợt thi, chuyên đề..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 pl-8 pr-7 text-xs rounded-md"
+                className="h-9 pl-8 pr-7 text-xs rounded-md bg-background"
               />
               {search && (
                 <button
@@ -339,7 +339,7 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
             {/* Lọc theo Đợt thi */}
             <div>
               <Select value={selectedDot} onValueChange={(val) => val && setSelectedDot(val)}>
-                <SelectTrigger className="h-9 w-full rounded-md text-xs px-2.5">
+                <SelectTrigger className="h-9 w-full rounded-md text-xs px-2.5 bg-background">
                   <div className="flex items-center gap-1.5 truncate">
                     <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue>
@@ -361,7 +361,7 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
             {/* Lọc theo Môn học */}
             <div>
               <Select value={selectedMon} onValueChange={(val) => val && setSelectedMon(val)}>
-                <SelectTrigger className="h-9 w-full rounded-md text-xs px-2.5">
+                <SelectTrigger className="h-9 w-full rounded-md text-xs px-2.5 bg-background">
                   <div className="flex items-center gap-1.5 truncate">
                     <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue>
@@ -383,7 +383,7 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
             {/* Lọc theo Mức điểm */}
             <div>
               <Select value={selectedScoreRange} onValueChange={(val) => val && setSelectedScoreRange(val)}>
-                <SelectTrigger className="h-9 w-full rounded-md text-xs px-2.5">
+                <SelectTrigger className="h-9 w-full rounded-md text-xs px-2.5 bg-background">
                   <div className="flex items-center gap-1.5 truncate">
                     <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <SelectValue>
@@ -430,7 +430,7 @@ export default function KetQuaClient({ initialData }: { initialData: BaiLamThiIt
               ))}
             </div>
           </div>
-        </section>
+        </div>
       )}
 
       {/* Trạng thái chưa có bài thi nào */}
