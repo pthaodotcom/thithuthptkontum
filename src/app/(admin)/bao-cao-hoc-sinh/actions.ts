@@ -24,44 +24,66 @@ export async function sinhLaiNhanXet(_state: ReportActionState, formData: FormDa
     if (baiLamIds.length > 10) throw new Error("Số môn trong đợt thi không hợp lệ");
 
     const supabase = await requireAdmin();
-    const { data: baiThi, error } = await supabase.from("bai_lam_thi")
-      .select("bai_lam_id,hoc_sinh_tai_khoan_id,diem_tong,phan_tich_chuyen_de(ty_le_dung,chuyen_de(ten_chuyen_de)),ca_thi_mon!inner(ca_thi!inner(dot_thi_id))")
+    const { data: baiThiTho, error } = await supabase.from("bai_lam_thi")
+      .select("bai_lam_id,hoc_sinh_tai_khoan_id,diem_tong,ca_thi_mon!inner(ca_thi!inner(ca_thi_id,dot_thi_id))")
       .in("bai_lam_id", baiLamIds).eq("trang_thai", "DaNopBai");
     if (error) throw new Error("Chưa tải được các bài thi để tạo nhận xét. Vui lòng thử lại.");
-    if (!baiThi || baiThi.length !== baiLamIds.length || baiThi.some((bai) => bai.diem_tong == null)) {
+    if (!baiThiTho || baiThiTho.length !== baiLamIds.length || baiThiTho.some((bai) => bai.diem_tong == null)) {
       throw new Error("Không tìm thấy đầy đủ các bài thi đã nộp");
     }
 
-    const hocSinhIds = new Set(baiThi.map((bai) => bai.hoc_sinh_tai_khoan_id));
-    const dotThiIds = new Set(baiThi.map((bai) => {
+    const hocSinhIds = new Set(baiThiTho.map((bai) => bai.hoc_sinh_tai_khoan_id));
+    const caThiIds = new Set<string>();
+    const dotThiIds = new Set(baiThiTho.map((bai) => {
       const caThiMon = Array.isArray(bai.ca_thi_mon) ? bai.ca_thi_mon[0] : bai.ca_thi_mon;
       const caThi = Array.isArray(caThiMon?.ca_thi) ? caThiMon.ca_thi[0] : caThiMon?.ca_thi;
+      if (caThi?.ca_thi_id) caThiIds.add(caThi.ca_thi_id);
       return caThi?.dot_thi_id;
     }));
     if (hocSinhIds.size !== 1 || dotThiIds.size !== 1 || dotThiIds.has(undefined)) {
       throw new Error("Các bài thi không thuộc cùng một học sinh và đợt thi");
     }
 
+    // Luôn phân tích chuyên đề cho các ca thi liên quan để cập nhật bảng phan_tich_chuyen_de
+    await Promise.all(
+      [...caThiIds].map(async (caThiId) => {
+        try {
+          await supabase.rpc("phan_tich_ket_qua_ca", { p_ca_thi_id: caThiId });
+        } catch (err) {
+          console.error("Lỗi khi chạy phan_tich_ket_qua_ca:", err);
+        }
+      })
+    );
+
+    // Lấy lại dữ liệu bài thi kèm kết quả phân tích chuyên đề vừa được cập nhật
+    const { data: baiThi } = await supabase.from("bai_lam_thi")
+      .select("bai_lam_id,diem_tong,phan_tich_chuyen_de(ty_le_dung,chuyen_de(ten_chuyen_de))")
+      .in("bai_lam_id", baiLamIds);
+
+    const danhSachBai = baiThi || baiThiTho;
     const thoiDiemSinh = new Date().toISOString();
-    const ketQua = await Promise.all(baiThi.map(async (bai) => {
+    const ketQua = await Promise.all(danhSachBai.map(async (bai) => {
       const nhom = xepNhomNangLuc(Number(bai.diem_tong));
-      const chuyenDeYeu = (bai.phan_tich_chuyen_de || [])
+      const phanTich = (bai as { phan_tich_chuyen_de?: Array<{ ty_le_dung: number; chuyen_de?: { ten_chuyen_de?: string } | Array<{ ten_chuyen_de?: string }> }> }).phan_tich_chuyen_de || [];
+      const chuyenDeYeu = phanTich
         .filter((item) => Number(item.ty_le_dung) < 60)
         .map((item) => {
           const chuyenDe = Array.isArray(item.chuyen_de) ? item.chuyen_de[0] : item.chuyen_de;
           return chuyenDe?.ten_chuyen_de || "";
         })
         .filter(Boolean);
+      const tongSoChuyenDe = phanTich.length;
 
       try {
         const noiDung = await sinhNhanXetGemini({
           diem: Number(bai.diem_tong),
           nhom,
           chuyenDeYeu,
+          tongSoChuyenDe,
         });
         return { bai_lam_id: bai.bai_lam_id, noi_dung: noiDung, nguon: "AI" as const, so_lan_thu_lai: 0, thoi_diem_sinh: thoiDiemSinh };
       } catch {
-        return { bai_lam_id: bai.bai_lam_id, noi_dung: nhanXetFallback(nhom, chuyenDeYeu, Number(bai.diem_tong)), nguon: "Fallback" as const, so_lan_thu_lai: 0, thoi_diem_sinh: thoiDiemSinh };
+        return { bai_lam_id: bai.bai_lam_id, noi_dung: nhanXetFallback(nhom, chuyenDeYeu, Number(bai.diem_tong), tongSoChuyenDe), nguon: "Fallback" as const, so_lan_thu_lai: 0, thoi_diem_sinh: thoiDiemSinh };
       }
     }));
 

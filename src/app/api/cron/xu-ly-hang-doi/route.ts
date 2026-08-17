@@ -39,20 +39,34 @@ export async function GET(req: NextRequest) {
       return apiThanhCong({ daXuLy: true, jobId: job.id, loaiJob: job.loai_job, ketQua: data });
     } else if (job.loai_job === "sinh_nhan_xet_ai" || job.loai_job === "thu_lai_nhan_xet_ai") {
       const { data: bai } = await supabase.from("bai_lam_thi")
-        .select("bai_lam_id,diem_tong,hoc_sinh_tai_khoan_id,ca_thi_mon!inner(mon_id),phan_tich_chuyen_de(ty_le_dung,chuyen_de(ten_chuyen_de))")
+        .select("bai_lam_id,diem_tong,hoc_sinh_tai_khoan_id,ca_thi_mon!inner(mon_id,ca_thi_id),phan_tich_chuyen_de(ty_le_dung,chuyen_de(ten_chuyen_de))")
         .eq("bai_lam_id", job.tham_chieu_id).single();
       if (!bai) throw new Error("KHONG_TIM_THAY_BAI_LAM");
       const ctm = Array.isArray(bai.ca_thi_mon) ? bai.ca_thi_mon[0] : bai.ca_thi_mon;
       if (!ctm) throw new Error("BAI_LAM_THIEU_MON");
       const nhom = xepNhomNangLuc(Number(bai.diem_tong));
-      const chuyenDeYeu = (bai.phan_tich_chuyen_de || [])
+
+      let phanTich = bai.phan_tich_chuyen_de || [];
+      if (phanTich.length === 0 && ctm.ca_thi_id) {
+        try {
+          await supabase.rpc("phan_tich_ket_qua_ca", { p_ca_thi_id: ctm.ca_thi_id });
+          const { data: ptMoi } = await supabase.from("phan_tich_chuyen_de")
+            .select("ty_le_dung,chuyen_de(ten_chuyen_de)")
+            .eq("bai_lam_id", bai.bai_lam_id);
+          if (ptMoi && ptMoi.length > 0) phanTich = ptMoi;
+        } catch (err) {
+          console.error("Lỗi tự động phân tích kết quả ca:", err);
+        }
+      }
+
+      const chuyenDeYeu = phanTich
         .filter((item) => Number(item.ty_le_dung) < 60)
         .map((item) => {
           const cd = Array.isArray(item.chuyen_de) ? item.chuyen_de[0] : item.chuyen_de;
           return cd?.ten_chuyen_de || "";
         })
         .filter(Boolean);
-      const tongSoChuyenDe = (bai.phan_tich_chuyen_de || []).length;
+      const tongSoChuyenDe = phanTich.length;
       let noiDung: string;
       let nguon = "AI";
       try {
