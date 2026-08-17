@@ -91,17 +91,17 @@ export default function YeuCauChinhSuaClient({ cauHoi, chuyenDe, mucDo, yeuCau }
         </div>
         <div className="grid grid-cols-3 gap-2">
           <select className="h-9 min-w-0 rounded-lg border border-slate-300 px-2 text-xs" value={locPhan} onChange={(e) => setLocPhan(e.target.value)}>
-            <option value="">Mọi Phần</option>
+            <option value="">Tất cả phần</option>
             <option value="I">Phần I</option>
             <option value="II">Phần II</option>
             <option value="III">Phần III</option>
           </select>
           <select className="h-9 min-w-0 rounded-lg border border-slate-300 px-2 text-xs" value={locBaiHoc} onChange={(e) => setLocBaiHoc(e.target.value)}>
-            <option value="">Mọi bài học</option>
+            <option value="">Tất cả bài học</option>
             {baiHocPhang.map((bh) => <option key={bh.bai_hoc_id} value={bh.bai_hoc_id}>{bh.ten_bai_hoc}</option>)}
           </select>
           <select className="h-9 min-w-0 rounded-lg border border-slate-300 px-2 text-xs" value={locMucDo} onChange={(e) => setLocMucDo(e.target.value)}>
-            <option value="">Mọi mức độ</option>
+            <option value="">Tất cả mức độ</option>
             {mucDo.map((md) => <option key={md.muc_do_id} value={md.muc_do_id}>{md.ten_muc}</option>)}
           </select>
         </div>
@@ -142,13 +142,13 @@ export default function YeuCauChinhSuaClient({ cauHoi, chuyenDe, mucDo, yeuCau }
         </div>
 
         <div className="space-y-4 rounded-lg border border-slate-200 p-4">
-          <p className="text-xs font-semibold uppercase text-slate-500">Nội dung chính (đề xuất)</p>
+          <p className="text-xs font-semibold uppercase text-slate-500">Nội dung câu hỏi mới</p>
           <div className="grid gap-2"><Label>Đề bài</Label><RichContentEditor value={noiDung} onChange={setNoiDung} placeholder="Nhập nội dung câu hỏi đề xuất…" minHeightClass="min-h-40" /></div>
           {selected.phan === "III" ? <div className="grid gap-2"><Label>Đáp án 4 ký tự</Label><Input maxLength={4} pattern="[0-9,-]{4}" value={dapAn3} onChange={(e) => setDapAn3(e.target.value)} /></div> : <div className="space-y-2"><Label>{selected.phan === "I" ? "Phương án" : "Các ý Đúng/Sai"}</Label>{chiTiet.map((item, index) => <div key={item.thu_tu} className="flex gap-2"><Input value={item.noi_dung} onChange={(e) => setChiTiet((old) => old.map((x, i) => i === index ? { ...x, noi_dung: e.target.value } : x))} /><label className="flex shrink-0 items-center gap-1 text-sm"><input type={selected.phan === "I" ? "radio" : "checkbox"} name={selected.phan === "I" ? "correct" : undefined} checked={item.la_dap_an_dung} onChange={() => setChiTiet((old) => old.map((x, i) => ({ ...x, la_dap_an_dung: selected.phan === "I" ? i === index : i === index ? !x.la_dap_an_dung : x.la_dap_an_dung })))} />{item.la_dap_an_dung ? "Đúng" : "Sai"}</label></div>)}</div>}
         </div>
 
         <div className="grid gap-4 rounded-lg border border-slate-200 p-4 sm:grid-cols-2">
-          <p className="text-xs font-semibold uppercase text-slate-500 sm:col-span-2">Thuộc tính phân loại</p>
+          <p className="text-xs font-semibold uppercase text-slate-500 sm:col-span-2">Thông tin phân loại</p>
           <div className="grid min-w-0 gap-2">
             <Label>Bài học</Label>
             <select title={baiHocPhang.find((bh) => bh.bai_hoc_id === baiHocId)?.ten_bai_hoc} className="h-10 min-w-0 w-full truncate rounded-lg border border-slate-300 bg-white px-3 text-sm" value={baiHocId} onChange={(e) => setBaiHocId(e.target.value)}>
@@ -168,7 +168,7 @@ export default function YeuCauChinhSuaClient({ cauHoi, chuyenDe, mucDo, yeuCau }
         <div className="space-y-3 rounded-lg border border-slate-200 p-4">
           <p className="text-xs font-semibold uppercase text-slate-500">Lý do</p>
           <div className="grid gap-2">
-            <Label>Phân loại lỗi <span className="font-normal text-slate-400">(tuỳ chọn)</span></Label>
+            <Label>Loại nội dung cần sửa <span className="font-normal text-slate-400">(không bắt buộc)</span></Label>
             <select className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm" value={phanLoaiLoi} onChange={(e) => setPhanLoaiLoi(e.target.value as PhanLoaiLoi | "")}>
               <option value="">Không chọn</option>
               {PHAN_LOAI_LOI.map((key) => <option key={key} value={key}>{NHAN_PHAN_LOAI_LOI[key]}</option>)}

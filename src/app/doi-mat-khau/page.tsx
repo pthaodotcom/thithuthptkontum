@@ -34,7 +34,7 @@ export default function DoiMatKhauPage() {
     }
 
     if (!dieuKien.every((d) => d.dat)) {
-      setError("Mật khẩu mới phải >= 8 ký tự, có chữ hoa và số");
+      setError("Mật khẩu mới phải có ít nhất 8 ký tự, một chữ in hoa và một chữ số.");
       return;
     }
 
@@ -54,7 +54,7 @@ export default function DoiMatKhauPage() {
 
       router.push("/");
     } catch {
-      setError("Có lỗi kết nối đến máy chủ");
+      setError("Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.");
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +63,7 @@ export default function DoiMatKhauPage() {
   return (
     <AuthShell
       title="Đổi mật khẩu"
-      subtitle="Đây là lần đăng nhập đầu hoặc mật khẩu đã hết hạn — hãy đặt mật khẩu mới."
+      subtitle="Nhập mật khẩu hiện tại và đặt mật khẩu mới để bảo vệ tài khoản của bạn."
     >
       {error && (
         <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive/10 px-3.5 py-3 text-sm text-destructive">

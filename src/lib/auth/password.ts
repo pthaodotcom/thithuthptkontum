@@ -31,13 +31,13 @@ export interface KetQuaValidateMatKhau {
 /** FR-M2-02: mat khau moi >= 8 ky tu, co chu hoa va chu so. */
 export function validateMatKhauMoi(matKhau: string): KetQuaValidateMatKhau {
   if (matKhau.length < 8) {
-    return { hopLe: false, loi: "Mat khau phai co it nhat 8 ky tu" };
+    return { hopLe: false, loi: "Mật khẩu phải có ít nhất 8 ký tự." };
   }
   if (!/[A-Z]/.test(matKhau)) {
-    return { hopLe: false, loi: "Mat khau phai co it nhat 1 chu hoa" };
+    return { hopLe: false, loi: "Mật khẩu phải có ít nhất một chữ in hoa." };
   }
   if (!/[0-9]/.test(matKhau)) {
-    return { hopLe: false, loi: "Mat khau phai co it nhat 1 chu so" };
+    return { hopLe: false, loi: "Mật khẩu phải có ít nhất một chữ số." };
   }
   return { hopLe: true };
 }

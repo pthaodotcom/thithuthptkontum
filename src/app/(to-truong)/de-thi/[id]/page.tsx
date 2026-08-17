@@ -49,7 +49,7 @@ export default async function XemDeThiPage({ params }: { params: Promise<{ id: s
         <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden="true" />Tạo lúc {formatDateTime(exam.created_at)}</span>
         <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">{statusLabel(exam.trang_thai)}</span>
       </div>
-      <p className="mt-4 rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-800">Đây là nội dung snapshot đã giao cho học sinh. Mọi thay đổi trong ngân hàng câu hỏi sau thời điểm tạo đề không ảnh hưởng đến bản này.</p>
+      <p className="mt-4 rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-800">Đây là nội dung đã giao cho học sinh. Nếu ngân hàng câu hỏi được sửa sau đó, đề thi này vẫn giữ nguyên.</p>
     </header>
 
     <section className="space-y-4" aria-labelledby="codes-title">

@@ -56,16 +56,16 @@ export default function NganHangClient({ mon, cauHoi, chuyenDe, mucDo, nguoiTao,
   const visibleRows = rows.slice(0, visibleCount);
 
   const remove = (id: string) => {
-    if (!window.confirm("Xóa hoặc vô hiệu hóa câu hỏi này?")) return;
+    if (!window.confirm("Xóa câu hỏi chưa dùng hoặc ngừng sử dụng câu hỏi đã dùng?")) return;
     start(async () => {
       const result = await xoaHoacVoHieuHoa(id);
-      result.success ? toast.success(result.voHieuHoa ? "Đã vô hiệu hóa" : "Đã xóa") : toast.error(result.error);
+    result.success ? toast.success(result.voHieuHoa ? "Đã ngừng sử dụng câu hỏi" : "Đã xóa câu hỏi") : toast.error(result.error);
     });
   };
 
   const bulkRemove = () => {
     const ids = [...selected];
-    if (!ids.length || !window.confirm(`Xóa hoặc vô hiệu hóa ${ids.length} câu hỏi đã chọn?`)) return;
+    if (!ids.length || !window.confirm(`Xóa câu chưa dùng hoặc ngừng sử dụng ${ids.length} câu hỏi đã chọn?`)) return;
     start(async () => {
       const results = await Promise.all(ids.map((id) => xoaHoacVoHieuHoa(id)));
       const successCount = results.filter((result) => result.success).length;
@@ -90,16 +90,16 @@ export default function NganHangClient({ mon, cauHoi, chuyenDe, mucDo, nguoiTao,
 
     <div className="grid gap-2 rounded-xl border bg-white p-4 sm:grid-cols-2 xl:grid-cols-4">
       <input className="h-10 rounded-md border px-3 text-sm sm:col-span-2" placeholder="Tìm nội dung câu hỏi…" aria-label="Tìm nội dung câu hỏi" value={q} onChange={(event) => { setQ(event.target.value); setVisibleCount(PAGE_SIZE); }} />
-      <Filter value={chapter} set={(value) => { setChapter(value); setLesson(""); setVisibleCount(PAGE_SIZE); }} all="Mọi chương" items={chuyenDe.map((item) => [item.chuyen_de_id, item.ten_chuyen_de])} />
-      <Filter value={lesson} set={(value) => { setLesson(value); setVisibleCount(PAGE_SIZE); }} all="Mọi bài học" items={lessons.map((item) => [item.bai_hoc_id, item.ten_bai_hoc])} />
-      <Filter value={level} set={(value) => { setLevel(value); setVisibleCount(PAGE_SIZE); }} all="Mọi mức độ" items={mucDo.map((item) => [item.muc_do_id, item.ten_muc])} />
+      <Filter value={chapter} set={(value) => { setChapter(value); setLesson(""); setVisibleCount(PAGE_SIZE); }} all="Tất cả chương" items={chuyenDe.map((item) => [item.chuyen_de_id, item.ten_chuyen_de])} />
+      <Filter value={lesson} set={(value) => { setLesson(value); setVisibleCount(PAGE_SIZE); }} all="Tất cả bài học" items={lessons.map((item) => [item.bai_hoc_id, item.ten_bai_hoc])} />
+      <Filter value={level} set={(value) => { setLevel(value); setVisibleCount(PAGE_SIZE); }} all="Tất cả mức độ" items={mucDo.map((item) => [item.muc_do_id, item.ten_muc])} />
       <Filter value={owner} set={setOwner} all="Tất cả người tạo" items={[
         ["mine", "Câu hỏi của tôi"],
         ...nguoiTao.filter((item) => item.tai_khoan_id !== currentUserId).map((item) => [item.tai_khoan_id, item.ho_ten]),
       ]} />
-      <Filter value={phan} set={setPhan} all="Mọi phần" items={[["I", "Phần I"], ["II", "Phần II"], ["III", "Phần III"]]} />
-      <Filter value={duyet} set={setDuyet} all="Mọi trạng thái duyệt" items={[["ChoDuyet", "Chờ duyệt"], ["CanChinhSua", "Cần chỉnh sửa"], ["DaDuyet", "Đã duyệt"], ["TuChoi", "Từ chối"]]} />
-      <Filter value={dung} set={setDung} all="Mọi trạng thái sử dụng" items={[["ChuaDung", "Chưa dùng"], ["DaDung", "Đã dùng"]]} />
+      <Filter value={phan} set={setPhan} all="Tất cả các phần" items={[["I", "Phần I"], ["II", "Phần II"], ["III", "Phần III"]]} />
+      <Filter value={duyet} set={setDuyet} all="Tất cả trạng thái duyệt" items={[["ChoDuyet", "Chờ duyệt"], ["CanChinhSua", "Cần chỉnh sửa"], ["DaDuyet", "Đã duyệt"], ["TuChoi", "Từ chối"]]} />
+      <Filter value={dung} set={setDung} all="Tất cả trạng thái sử dụng" items={[["ChuaDung", "Chưa dùng"], ["DaDung", "Đã dùng"]]} />
     </div>
 
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
@@ -114,7 +114,7 @@ export default function NganHangClient({ mon, cauHoi, chuyenDe, mucDo, nguoiTao,
       <span className="text-sm font-semibold">Đã chọn {selected.size} câu hỏi</span>
       <div className="flex gap-2">
         <Button size="sm" variant="secondary" onClick={() => setSelected(new Set())}>Bỏ chọn</Button>
-        <Button size="sm" variant="destructive" disabled={pending} onClick={bulkRemove}><Trash2 className="mr-1.5 h-4 w-4" />Xóa / Vô hiệu hóa</Button>
+          <Button size="sm" variant="destructive" disabled={pending} onClick={bulkRemove}><Trash2 className="mr-1.5 h-4 w-4" />Xóa / Ngừng sử dụng</Button>
       </div>
     </div>}
 
@@ -157,7 +157,7 @@ function QuestionCard({ item, levelName, isMine, readOnly, checked, pending, all
           <Badge className="bg-violet-100 text-violet-700">{levelName}</Badge>
           <Badge className={item.trang_thai_duyet === "DaDuyet" ? "bg-emerald-100 text-emerald-700" : item.trang_thai_duyet === "ChoDuyet" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}>{approvalLabel(item.trang_thai_duyet)}</Badge>
           <Badge className={item.trang_thai_su_dung === "DaDung" ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-600"}>{usageLabel(item.trang_thai_su_dung)}</Badge>
-          {item.trang_thai_hoat_dong === "VoHieuHoa" && <Badge className="bg-red-100 text-red-700">Vô hiệu hóa</Badge>}
+      {item.trang_thai_hoat_dong === "VoHieuHoa" && <Badge className="bg-red-100 text-red-700">Đã ngừng dùng</Badge>}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
           <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -187,7 +187,7 @@ function QuestionCard({ item, levelName, isMine, readOnly, checked, pending, all
 
         {item.yeu_cau_chinh_sua?.some((request) => request.trang_thai === "ChoDuyet") && <p className="mt-3 text-xs font-semibold text-amber-700">Đang có yêu cầu chỉnh sửa chờ duyệt.</p>}
         {allowRevision && !item.yeu_cau_chinh_sua?.some((request) => request.trang_thai === "ChoDuyet") && <div className="mt-3 flex justify-end"><Button type="button" size="sm" variant="outline" onClick={onRevision}>Đề xuất chỉnh sửa</Button></div>}
-        {!readOnly && <div className="mt-3 flex justify-end"><Button size="sm" variant="outline" disabled={pending} onClick={onRemove}>{item.trang_thai_su_dung === "ChuaDung" ? "Xóa" : "Vô hiệu hóa"}</Button></div>}
+      {!readOnly && <div className="mt-3 flex justify-end"><Button size="sm" variant="outline" disabled={pending} onClick={onRemove}>{item.trang_thai_su_dung === "ChuaDung" ? "Xóa" : "Ngừng sử dụng"}</Button></div>}
       </div>
     </div>
   </article>;
@@ -200,7 +200,7 @@ function Badge({ children, className }: { children: React.ReactNode; className: 
 function DapAn({ cau }: { cau: Cau }) {
   if (cau.phan === "III") return <p className="text-sm text-emerald-800"><span className="font-semibold">Đáp án:</span> {cau.dap_an_phan3 || "Chưa có đáp án"}</p>;
   const chiTiet = [...(cau.chi_tiet_cau_hoi || [])].sort((a, b) => a.thu_tu - b.thu_tu);
-  if (!chiTiet.length) return <p className="text-sm italic text-amber-700">Câu hỏi chưa có dữ liệu đáp án.</p>;
+  if (!chiTiet.length) return <p className="text-sm italic text-amber-700">Câu hỏi chưa có đáp án.</p>;
   return <div className="grid gap-2 sm:grid-cols-2">{chiTiet.map((detail, index) => {
     const correct = detail.la_dap_an_dung;
     return <div key={detail.thu_tu} className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${correct ? "border-emerald-200 bg-white text-emerald-800" : "border-slate-200 bg-white text-slate-700"}`}>

@@ -7,6 +7,7 @@ const row = (lop: string, diem: number): ReportRow => ({
   soCauDung: 1, soCauSai: 0,
   nhom: diem < 5 ? "CanOnTapGap" : diem < 6.5 ? "TrungBinh" : diem < 8 ? "Kha" : "DaNamVung",
   nopLuc: null,
+  soViPham: 0, loaiViPham: [], viPhamGanNhat: null, tuDongThuBaiDoViPham: false,
 });
 
 describe("tongHopMonTheoLop", () => {

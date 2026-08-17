@@ -16,11 +16,11 @@ function thongBaoLoi(message:string){
     NGAY_THI_2_PHAI_SAU_NGAY_THI_1:"Ngày thi thứ hai phải sau ngày thi thứ nhất.",
     KHONG_TIM_THAY_DOT_THI:"Không tìm thấy đợt thi.",
     PHAI_CHON_IT_NHAT_MOT_LOP:"Phải chọn ít nhất một lớp tham gia đợt thi.",
-    CHUA_DU_BON_KHUNG_GIO:"Chưa cấu hình đủ 4 khung giờ chuẩn — vào mục Quản lý khung giờ ca thi để bổ sung.",
-    PHAI_CO_DUNG_HAI_MON_BAT_BUOC:"Phải có đúng 2 môn Bắt buộc đang dùng (mỗi ca thi 1 và 2 gán đúng 1 môn) — vào mục Môn học để kiểm tra Loại môn và Trạng thái.",
+    CHUA_DU_BON_KHUNG_GIO:"Chưa có đủ 4 khung giờ thi. Vui lòng bổ sung tại mục Khung giờ ca thi.",
+    PHAI_CO_DUNG_HAI_MON_BAT_BUOC:"Cần có đúng 2 môn bắt buộc đang sử dụng, một môn ở ca 1 và một môn ở ca 2. Vui lòng kiểm tra lại tại mục Môn học.",
   };
   const code=Object.keys(messages).find(x=>message.includes(x));
-  return code?messages[code]:message;
+  return code?messages[code]:"Chưa thực hiện được yêu cầu. Vui lòng kiểm tra thông tin và thử lại.";
 }
 export async function taoDotThi(input:z.input<typeof schema>){
   const u=await laySessionHienHanh();if(!u||u.vai_tro!=="Admin")return{success:false,error:"Không có quyền"};

@@ -97,7 +97,7 @@ export default function PhanCongClient({ giaoVienList, lopList, monList, initial
       }));
       const result = await importPhanCong(rows);
       setErrors(result.loi);
-      toast.success(`Đã import ${result.thanhCong}/${rows.length} phân công hợp lệ`);
+      toast.success(`Đã nhập ${result.thanhCong}/${rows.length} phân công từ file Excel`);
       router.refresh();
     } catch {
       toast.error("Không đọc được file Excel");
@@ -118,7 +118,7 @@ export default function PhanCongClient({ giaoVienList, lopList, monList, initial
       ["Cột", "Bắt buộc", "Hướng dẫn"],
       ["ma_giao_vien", "Có", "Mã số của giáo viên đang hoạt động"],
       ["ten_lop", "Có", "Tên lớp đang hoạt động, phải khớp danh mục lớp"],
-      ["Lưu ý", "", "Môn dạy lấy từ môn phụ trách của giáo viên. Có thể đổi môn bằng thao tác Sửa trên màn hình."],
+      ["Lưu ý", "", "Môn dạy được lấy từ thông tin của giáo viên. Muốn đổi môn, chọn nút Sửa ở danh sách phân công."],
     ]), "HuongDan");
     XLSX.writeFile(book, "mau-import-phan-cong-giang-day.xlsx");
   };
@@ -130,7 +130,7 @@ export default function PhanCongClient({ giaoVienList, lopList, monList, initial
         <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
         <div className="ml-auto flex gap-2">
           <Button type="button" variant="ghost" onClick={downloadTemplate}><Download className="mr-2 h-4 w-4" />Tải file mẫu</Button>
-          <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import Excel</Button>
+          <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Nhập từ Excel</Button>
         </div>
       </div>
 
@@ -213,7 +213,7 @@ export default function PhanCongClient({ giaoVienList, lopList, monList, initial
         </DialogContent>
       </Dialog>
 
-      <p className="text-xs text-muted-foreground">File Excel phân công cần hai cột: <code>ma_giao_vien</code> và <code>ten_lop</code>. Môn dạy có thể chọn hoặc thay đổi bằng thao tác Sửa.</p>
+      <p className="text-xs text-muted-foreground">File Excel cần hai cột: <code>ma_giao_vien</code> và <code>ten_lop</code>. Muốn đổi môn dạy, chọn nút Sửa ở danh sách trên.</p>
     </div>
   );
 }

@@ -41,7 +41,7 @@ function Preview({title,cau}:{title?:string;cau:Cau}) {
   const chuyenDe = motGiaTri(baiHoc?.chuyen_de)?.ten_chuyen_de;
   const nguoiTao = motGiaTri(cau.tai_khoan)?.ho_ten;
   return <div className="rounded-lg bg-slate-50 p-4">
-    <div className="flex flex-wrap items-center gap-2" aria-label="Nhãn phân loại câu hỏi">
+    <div className="flex flex-wrap items-center gap-2" aria-label="Thông tin câu hỏi">
       <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold uppercase text-slate-700">{title ?? `Phần ${cau.phan}`}</span>
       {mucDo && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">{mucDo}</span>}
       {chuyenDe && <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"><Layers3 className="h-3 w-3" aria-hidden="true" />{chuyenDe}</span>}

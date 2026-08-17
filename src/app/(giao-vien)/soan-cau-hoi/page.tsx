@@ -17,10 +17,10 @@ export default async function SoanCauHoiPage({ searchParams }: { searchParams: P
     .maybeSingle();
   const mon = Array.isArray(taiKhoan?.mon) ? taiKhoan.mon[0] : taiKhoan?.mon;
   if (!mon || !taiKhoan?.mon_id) {
-    return <ThongBao title="Chưa được gán môn" detail="Liên hệ Admin để gán môn phụ trách trước khi soạn câu hỏi." />;
+    return <ThongBao title="Chưa có môn phụ trách" detail="Vui lòng liên hệ quản trị viên để cập nhật môn trước khi soạn câu hỏi." />;
   }
   if (!mon.ho_tro_ngan_hang_cau_hoi) {
-    return <ThongBao title="Môn không thuộc phạm vi" detail={`Môn ${mon.ten_mon} không sử dụng ngân hàng câu hỏi, tạo đề và chấm tự động.`} />;
+    return <ThongBao title="Không soạn câu hỏi tại đây" detail={`Môn ${mon.ten_mon} chưa sử dụng ngân hàng câu hỏi và chức năng chấm tự động.`} />;
   }
   const [{ data: chuyenDe }, { data: mucDo }, { data: cauHoi }, { data: cauHoiChinhSua }] = await Promise.all([
     supabase

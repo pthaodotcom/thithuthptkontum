@@ -29,19 +29,19 @@ export async function luuPhanCong(giaoVienId: string, monId: string, lopIds: str
   if (!mon) return { success: false, error: "Môn được chọn không tồn tại hoặc đã ngừng dùng" };
 
   const { error: monError } = await supabase.from("tai_khoan").update({ mon_id: monId }).eq("tai_khoan_id", giaoVienId);
-  if (monError) return { success: false, error: monError.message };
+  if (monError) return { success: false, error: "Chưa cập nhật được môn phụ trách của giáo viên. Vui lòng thử lại." };
 
   const uniqueLopIds = [...new Set(lopIds)];
   const { error: deleteError } = await supabase
     .from("phan_cong_giang_day")
     .delete()
     .eq("giao_vien_tai_khoan_id", giaoVienId);
-  if (deleteError) return { success: false, error: deleteError.message };
+  if (deleteError) return { success: false, error: "Chưa cập nhật được danh sách lớp của giáo viên. Vui lòng thử lại." };
   if (uniqueLopIds.length) {
     const { error } = await supabase.from("phan_cong_giang_day").insert(
       uniqueLopIds.map(lopId => ({ giao_vien_tai_khoan_id: giaoVienId, lop_id: lopId })),
     );
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa lưu được phân công giảng dạy. Vui lòng thử lại." };
   }
   revalidatePath("/phan-cong-giang-day");
   revalidatePath("/tai-khoan");

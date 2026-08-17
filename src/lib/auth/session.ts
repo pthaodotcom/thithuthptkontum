@@ -34,19 +34,19 @@ export async function dangNhap(maSo: string, matKhau: string): Promise<KetQuaDan
 
   if (error) {
     console.error("Khong the truy van tai khoan khi dang nhap:", error.message);
-    return { thanhCong: false, loi: "Khong the ket noi co so du lieu, vui long thu lai" };
+    return { thanhCong: false, loi: "Chưa kết nối được đến hệ thống. Vui lòng thử lại sau ít phút." };
   }
 
   if (!taiKhoan) {
-    return { thanhCong: false, loi: "Ma so hoac mat khau khong dung" };
+    return { thanhCong: false, loi: "Mã số hoặc mật khẩu không đúng." };
   }
 
   if (taiKhoan.trang_thai === "DinhChi") {
-    return { thanhCong: false, loi: "Tai khoan da bi dinh chi, lien he Admin" };
+    return { thanhCong: false, loi: "Tài khoản đang bị tạm khóa. Vui lòng liên hệ quản trị viên nhà trường." };
   }
 
   if (taiKhoan.khoa_dang_nhap_den && new Date(taiKhoan.khoa_dang_nhap_den) > new Date()) {
-    return { thanhCong: false, loi: `Tai khoan dang bi khoa den ${taiKhoan.khoa_dang_nhap_den}` };
+    return { thanhCong: false, loi: `Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${new Date(taiKhoan.khoa_dang_nhap_den).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}.` };
   }
 
   // Mat khau mac dinh het hieu luc sau 15 ngay neu chua tung dang nhap (FR-M2-02)
@@ -55,7 +55,7 @@ export async function dangNhap(maSo: string, matKhau: string): Promise<KetQuaDan
     taiKhoan.mat_khau_mac_dinh_het_han_luc &&
     new Date(taiKhoan.mat_khau_mac_dinh_het_han_luc) < new Date()
   ) {
-    return { thanhCong: false, loi: "Mat khau mac dinh da het hieu luc, lien he Admin de reset" };
+    return { thanhCong: false, loi: "Mật khẩu ban đầu đã hết hạn. Vui lòng liên hệ quản trị viên để được cấp lại." };
   }
 
   const dungMatKhau = await xacMinhMatKhau(matKhau, taiKhoan.mat_khau_hash);
@@ -68,7 +68,7 @@ export async function dangNhap(maSo: string, matKhau: string): Promise<KetQuaDan
       capNhat.so_lan_sai_lien_tiep = 0;
     }
     await supabase.from("tai_khoan").update(capNhat).eq("tai_khoan_id", taiKhoan.tai_khoan_id);
-    return { thanhCong: false, loi: "Ma so hoac mat khau khong dung" };
+    return { thanhCong: false, loi: "Mã số hoặc mật khẩu không đúng." };
   }
 
   // Dang nhap thanh cong: reset dem sai, sinh session_id moi (huy phien cu)
@@ -81,7 +81,7 @@ export async function dangNhap(maSo: string, matKhau: string): Promise<KetQuaDan
     .maybeSingle();
   if (sessionUpdateError || updatedSession?.phien_hien_hanh !== sessionId) {
     console.error("Khong the cap nhat phien dang nhap:", sessionUpdateError);
-    return { thanhCong: false, loi: "Khong the ket noi co so du lieu, vui long thu lai" };
+    return { thanhCong: false, loi: "Chưa kết nối được đến hệ thống. Vui lòng thử lại sau ít phút." };
   }
 
   const jwt = await kySessionJwt({

@@ -52,12 +52,12 @@ export default function DoiMonClient({
 
       setMsg(
         result.daGiuLichSuMonCu || result.monCuDaCoDe
-          ? "Đã đổi môn. Đề và lịch sử bài thi của môn cũ được giữ nguyên."
+          ? "Đã đổi môn. Các bài thi trước đây của môn cũ vẫn được giữ lại."
           : "Đã đổi môn và cập nhật danh sách dự thi.",
       );
       if (result.monMoiChuaCoDe) {
         setWarning(
-          "Môn này cần thời gian chuẩn bị — vui lòng kiểm tra lại gần ngày thi.",
+          "Lịch thi cho môn mới chưa sẵn sàng. Vui lòng kiểm tra lại gần ngày thi.",
         );
       }
       router.refresh();
@@ -67,12 +67,12 @@ export default function DoiMonClient({
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Đổi môn tự chọn</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Mỗi vị trí (Tự chọn 1 / Tự chọn 2) được đổi tối đa 2 lần mỗi đợt thi.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Mỗi môn tự chọn được đổi tối đa 2 lần trong một đợt thi.</p>
       </div>
 
       {!dot.length ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          Hiện không có đợt thi nào thuộc lớp của bạn.
+          Hiện chưa có đợt thi nào dành cho lớp của bạn.
         </div>
       ) : (
         <>
@@ -94,7 +94,7 @@ export default function DoiMonClient({
           {dotDangChon && (
             <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
               Hạn đổi: <b className="text-foreground">{new Date(dotDangChon.han_doi).toLocaleString("vi-VN")}</b>.
-              {" "}Số lượt đã dùng: TC1 {dotDangChon.so_lan_tc1}/2, TC2 {dotDangChon.so_lan_tc2}/2.
+              {" "}Số lần đã đổi: Môn 1 — {dotDangChon.so_lan_tc1}/2, Môn 2 — {dotDangChon.so_lan_tc2}/2.
             </p>
           )}
 

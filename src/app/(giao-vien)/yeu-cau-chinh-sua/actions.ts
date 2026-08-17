@@ -53,7 +53,7 @@ export async function guiYeuCauChinhSua(input: { cauHoiId: string; lyDo: string;
     });
     if (error) {
       if (error.code === "23505") throw new Error("Câu hỏi đã có một yêu cầu chỉnh sửa đang chờ");
-      throw new Error(error.message);
+    throw new Error("Chưa gửi được yêu cầu chỉnh sửa. Vui lòng thử lại.");
     }
     revalidatePath("/yeu-cau-chinh-sua");
     revalidatePath("/ngan-hang-cau-hoi-mon");

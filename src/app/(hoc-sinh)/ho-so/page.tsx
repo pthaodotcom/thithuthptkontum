@@ -11,11 +11,14 @@ import {
   CircleSlash,
   Clock,
   GraduationCap,
+  History,
+  PlayCircle,
 } from "lucide-react";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
+import { apDungDemoBypass, demoBypassDangBat, type DemoBypassOverride } from "@/lib/demo/bypass";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +50,21 @@ export default async function HoSoPage() {
   const tc1 = Array.isArray(taiKhoan?.monTuChon1) ? taiKhoan.monTuChon1[0] : taiKhoan?.monTuChon1;
   const tc2 = Array.isArray(taiKhoan?.monTuChon2) ? taiKhoan.monTuChon2[0] : taiKhoan?.monTuChon2;
 
+  const overrideTheoCaMon = new Map<string, DemoBypassOverride>();
+  if (demoBypassDangBat() && (baiLam?.length ?? 0) > 0) {
+    const { data: overrideRows } = await supabase
+      .from("demo_bypass_ca_thi_mon")
+      .select("ca_thi_mon_id,trang_thai,gio_bat_dau,gio_ket_thuc")
+      .in("ca_thi_mon_id", (baiLam ?? []).map((item) => item.ca_thi_mon_id));
+    for (const row of overrideRows ?? []) {
+      overrideTheoCaMon.set(row.ca_thi_mon_id, {
+        trang_thai: row.trang_thai as DemoBypassOverride["trang_thai"],
+        gio_bat_dau: row.gio_bat_dau,
+        gio_ket_thuc: row.gio_ket_thuc,
+      });
+    }
+  }
+
   const lich = (baiLam ?? [])
     .map((b) => {
       const ctm = Array.isArray(b.ca_thi_mon) ? b.ca_thi_mon[0] : b.ca_thi_mon;
@@ -54,23 +72,34 @@ export default async function HoSoPage() {
       const ca = Array.isArray(ctm?.ca_thi) ? ctm.ca_thi[0] : ctm?.ca_thi;
       const dot = Array.isArray(ca?.dot_thi) ? ca.dot_thi[0] : ca?.dot_thi;
       if (!mon || !ca) return null;
+      const lichHieuLuc = apDungDemoBypass(
+        {
+          trangThai: ca.trang_thai as string,
+          gioBatDau: ca.gio_bat_dau as string,
+          gioKetThuc: ca.gio_ket_thuc as string,
+        },
+        overrideTheoCaMon.get(b.ca_thi_mon_id)
+      );
       return {
         baiLamId: b.bai_lam_id,
         caThiMonId: b.ca_thi_mon_id,
         trangThaiBai: b.trang_thai,
         tenMon: mon.ten_mon as string,
         soThuTuCa: ca.so_thu_tu_ca as number,
-        gioBatDau: ca.gio_bat_dau as string,
-        gioKetThuc: ca.gio_ket_thuc as string,
-        trangThaiCa: ca.trang_thai as string,
+        gioBatDau: lichHieuLuc.gioBatDau,
+        gioKetThuc: lichHieuLuc.gioKetThuc,
+        trangThaiCa: lichHieuLuc.trangThai,
         tenDotThi: dot?.ten_dot_thi as string | undefined,
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => new Date(a.gioBatDau).getTime() - new Date(b.gioBatDau).getTime());
 
-  const dangThi = lich.filter((x) => x.trangThaiBai === "DangThi");
-  const conLai = lich.filter((x) => x.trangThaiBai !== "DangThi");
+  const canThiNgay = lich
+    .filter((item) => phanNhomLichThi(item) === "can-thi-ngay")
+    .sort((a, b) => Number(b.trangThaiBai === "DangThi") - Number(a.trangThaiBai === "DangThi"));
+  const sapDienRa = lich.filter((item) => phanNhomLichThi(item) === "sap-dien-ra");
+  const daKetThuc = lich.filter((item) => phanNhomLichThi(item) === "da-ket-thuc").reverse();
 
   return (
     <div className="space-y-8">
@@ -87,7 +116,7 @@ export default async function HoSoPage() {
             {lop?.ten_lop ? ` · Lớp ${lop.ten_lop} · Khối ${lop.khoi}` : ""}
           </p>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Theo dõi lịch thi và trạng thái từng môn đã được phân công cho bạn.
+            Xem lịch thi, giờ vào thi và tình trạng từng môn của bạn.
           </p>
         </div>
 
@@ -112,44 +141,41 @@ export default async function HoSoPage() {
         </section>
       </header>
 
-      {dangThi.length > 0 && (
-        <section className="space-y-3">
-          {dangThi.map((item) => (
-            <div
-              key={item.caThiMonId}
-              className="flex flex-col items-stretch gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-5 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
-                  <AlertTriangle aria-hidden="true" className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="font-semibold text-foreground">{item.tenMon} đang diễn ra</p>
-                  <p className="text-sm text-muted-foreground">Bạn có bài làm chưa nộp — tiếp tục ngay để không bị tính hết giờ.</p>
-                </div>
-              </div>
-              <Link href={`/lam-bai/${item.caThiMonId}`} className={cn(buttonVariants({ size: "lg" }), "min-h-11 w-full sm:w-auto")}>
-                Tiếp tục làm bài <ArrowRight aria-hidden="true" className="h-4 w-4" />
-              </Link>
-            </div>
-          ))}
-        </section>
-      )}
-
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Lịch thi của bạn</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{lich.length} môn thi trong lịch hiện tại</p>
+          <p className="mt-1 text-sm text-muted-foreground">{lich.length} môn trong lịch thi hiện tại</p>
         </div>
-        {!conLai.length ? (
+        {!lich.length ? (
           <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             Bạn chưa được phân công ca thi nào.
           </div>
         ) : (
-          <div className="divide-y divide-border rounded-xl border border-border bg-card">
-            {conLai.map((item) => (
-              <LichThiRow key={item.caThiMonId} item={item} />
-            ))}
+          <div className="space-y-7">
+            <NhomLichThi
+              id="can-thi-ngay"
+              title="Có thể vào thi"
+              description="Vào thi hoặc tiếp tục bài đang làm trước khi hết giờ."
+              items={canThiNgay}
+              icon={PlayCircle}
+              tone="primary"
+            />
+            <NhomLichThi
+              id="sap-dien-ra"
+              title="Sắp diễn ra"
+              description="Các môn chưa đến giờ thi, xếp theo thời gian gần nhất."
+              items={sapDienRa}
+              icon={Clock}
+              tone="muted"
+            />
+            <NhomLichThi
+              id="da-ket-thuc"
+              title="Đã thi hoặc vắng mặt"
+              description="Các môn đã nộp bài, đã kết thúc hoặc bạn không tham dự."
+              items={daKetThuc}
+              icon={History}
+              tone="muted"
+            />
           </div>
         )}
       </section>
@@ -169,6 +195,74 @@ type LichItem = {
   tenDotThi?: string;
 };
 
+type NhomLichThiId = "can-thi-ngay" | "sap-dien-ra" | "da-ket-thuc";
+
+const TRANG_THAI_BAI_DA_KET_THUC = new Set(["DaNopBai", "VangMat", "KhongTheDuThi_LoiToChuc"]);
+
+function phanNhomLichThi(item: LichItem): NhomLichThiId {
+  if (TRANG_THAI_BAI_DA_KET_THUC.has(item.trangThaiBai) || item.trangThaiCa === "KetThuc") {
+    return "da-ket-thuc";
+  }
+  if (item.trangThaiBai === "DangThi" || item.trangThaiCa === "DangMo") {
+    return "can-thi-ngay";
+  }
+  return "sap-dien-ra";
+}
+
+function NhomLichThi({
+  id,
+  title,
+  description,
+  items,
+  icon: Icon,
+  tone,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  items: LichItem[];
+  icon: LucideIcon;
+  tone: "primary" | "muted";
+}) {
+  if (!items.length) return null;
+
+  return (
+    <section aria-labelledby={`${id}-heading`} className="space-y-3">
+      <div className="flex items-start gap-3">
+        <span
+          className={cn(
+            "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+            tone === "primary" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          )}
+        >
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 id={`${id}-heading`} className="font-semibold text-foreground">
+              {title}
+            </h3>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+              {items.length}
+            </span>
+          </div>
+          <p className="mt-0.5 text-sm leading-5 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div
+        className={cn(
+          "divide-y divide-border overflow-hidden rounded-xl border bg-card",
+          tone === "primary" ? "border-primary/35 shadow-sm" : "border-border"
+        )}
+      >
+        {items.map((item) => (
+          <LichThiRow key={item.caThiMonId} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function LichThiRow({ item }: { item: LichItem }) {
   const batDau = new Date(item.gioBatDau);
   const ketThuc = new Date(item.gioKetThuc);
@@ -183,6 +277,8 @@ function LichThiRow({ item }: { item: LichItem }) {
     action = { kind: "badge", icon: CircleSlash, text: "Vắng mặt", tone: "muted" };
   } else if (item.trangThaiBai === "KhongTheDuThi_LoiToChuc") {
     action = { kind: "badge", icon: AlertTriangle, text: "Lỗi tổ chức — liên hệ giám thị", tone: "destructive" };
+  } else if (item.trangThaiBai === "DangThi") {
+    action = { kind: "button", text: "Tiếp tục làm bài" };
   } else if (item.trangThaiCa === "DangMo") {
     action = { kind: "button", text: "Vào thi" };
   } else if (item.trangThaiCa === "KetThuc") {
@@ -199,7 +295,7 @@ function LichThiRow({ item }: { item: LichItem }) {
         </span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-foreground">{item.tenMon}</h3>
+            <h4 className="font-semibold text-foreground">{item.tenMon}</h4>
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">Ca {item.soThuTuCa}</span>
             {item.tenDotThi && <span className="text-xs font-medium text-muted-foreground">{item.tenDotThi}</span>}
           </div>

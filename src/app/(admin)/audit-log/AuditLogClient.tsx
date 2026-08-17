@@ -55,7 +55,7 @@ function JsonPanel({ title, value }: { title: string; value: unknown }) {
         </pre>
       ) : (
         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Không có snapshot
+          Không có thông tin
         </div>
       )}
     </section>
@@ -90,12 +90,12 @@ export default function AuditLogClient() {
         cache: "no-store", signal,
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.message ?? "Không thể tải audit log");
+      if (!response.ok) throw new Error(body.message ?? "Chưa tải được lịch sử thay đổi");
       setData(body.data);
       setError("");
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return;
-      setError(cause instanceof Error ? cause.message : "Không thể tải audit log");
+      setError(cause instanceof Error ? cause.message : "Chưa tải được lịch sử thay đổi");
     } finally {
       setLoading(false);
     }
@@ -116,21 +116,21 @@ export default function AuditLogClient() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold text-foreground">Nhật ký kiểm toán</h1>
+        <h1 className="text-2xl font-bold text-foreground">Lịch sử thay đổi</h1>
         <p className="text-sm text-muted-foreground">
-          Dữ liệu chỉ đọc, lưu vết các thay đổi quan trọng trong hệ thống.
+          Xem ai đã thay đổi thông tin nào và thay đổi vào lúc nào.
         </p>
       </header>
 
       <section className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-2 xl:grid-cols-6">
         <label className="space-y-1 text-sm text-foreground">
-          <span>Từ thời gian</span>
+          <span>Từ ngày, giờ</span>
           <input type="datetime-local" className="h-10 w-full rounded-lg border border-input bg-background px-2 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             value={filters.tuNgay}
             onChange={(event) => changeFilter("tuNgay", event.target.value)} />
         </label>
         <label className="space-y-1 text-sm text-foreground">
-          <span>Đến thời gian</span>
+          <span>Đến ngày, giờ</span>
           <input type="datetime-local" className="h-10 w-full rounded-lg border border-input bg-background px-2 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             value={filters.denNgay}
             onChange={(event) => changeFilter("denNgay", event.target.value)} />
@@ -164,7 +164,7 @@ export default function AuditLogClient() {
           </select>
         </label>
         <label className="space-y-1 text-sm text-foreground">
-          <span>Số dòng</span>
+          <span>Số mục mỗi trang</span>
           <select className="h-10 w-full rounded-lg border border-input bg-background px-2 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" value={filters.pageSize}
             onChange={(event) => changeFilter("pageSize", event.target.value)}>
             <option value="25">25</option><option value="50">50</option>
@@ -186,7 +186,7 @@ export default function AuditLogClient() {
           <tbody>
             {loading && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Đang tải…</td></tr>}
             {!loading && !data.items.length && (
-              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Không có audit log phù hợp.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Không có thay đổi nào phù hợp.</td></tr>
             )}
             {!loading && data.items.map((item) => (
               <tr key={item.id} className="border-t border-border">
@@ -206,7 +206,7 @@ export default function AuditLogClient() {
                     : item.nguoi_thuc_hien_tai_khoan_id ?? "Hệ thống"}
                 </td>
                 <td className="p-3 text-right">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setSelected(item)}>Xem JSON</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setSelected(item)}>Xem thay đổi</Button>
                 </td>
               </tr>
             ))}
@@ -239,7 +239,7 @@ export default function AuditLogClient() {
           </DialogHeader>
           {selected?.la_du_lieu_legacy && (
             <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              Bản ghi legacy không có đủ snapshot trước/sau; payload gốc được giữ nguyên bên dưới.
+              Mục này được lưu theo định dạng cũ nên không tách riêng được thông tin trước và sau khi thay đổi.
             </p>
           )}
           {selected && (
@@ -249,7 +249,7 @@ export default function AuditLogClient() {
             </div>
           )}
           {selected?.la_du_lieu_legacy && (
-            <JsonPanel title="Dữ liệu legacy" value={selected.du_lieu} />
+            <JsonPanel title="Thông tin đã lưu" value={selected.du_lieu} />
           )}
         </DialogContent>
       </Dialog>

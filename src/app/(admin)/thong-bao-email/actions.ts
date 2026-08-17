@@ -14,12 +14,12 @@ export async function thuLaiEmail(baiLamId: string) {
     .in("trang_thai", ["ThatBaiTamThoi", "CanXuLyThuCong"])
     .select("bai_lam_id")
     .maybeSingle();
-  if (logError) throw new Error(logError.message);
-  if (!emailLog) throw new Error("Email không ở trạng thái cho phép thử lại");
+  if (logError) throw new Error("Chưa thể chuẩn bị gửi lại email. Vui lòng thử lại.");
+  if (!emailLog) throw new Error("Email này không cần gửi lại hoặc đang được xử lý.");
   const { error } = await supabase.from("job_hang_doi").insert({
     loai_job: "gui_email", tham_chieu_id: baiLamId,
     khoa_idempotency: `email-manual:${baiLamId}:${Date.now()}`,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error("Chưa thể gửi lại email lúc này. Vui lòng thử lại sau.");
   revalidatePath("/thong-bao-email");
 }

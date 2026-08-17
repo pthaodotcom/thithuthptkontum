@@ -40,6 +40,9 @@ export async function GET(request: NextRequest) {
         ["BÁO CÁO KẾT QUẢ THI THỬ"],
         ["Số bài hợp lệ", report.rows.length],
         ["Điểm trung bình", report.diemTrungBinh],
+        ["Tổng lượt vi phạm", report.tongViPham],
+        ["Số bài có vi phạm", report.soBaiCoViPham],
+        ["Số bài tự động thu do vi phạm", report.soBaiTuDongThu],
         [],
         ["Nhóm năng lực", "Số lượng"],
         ...report.nhomNangLuc.map((x) => [labels[x.nhom], x.soLuong]),
@@ -47,12 +50,14 @@ export async function GET(request: NextRequest) {
       const detail = XLSX.utils.json_to_sheet(report.rows.map((row) => ({
         "Mã số": row.maSo, "Họ tên": row.hoTen, "Lớp": row.lop, "Môn": row.mon,
         "Đợt thi": row.dotThi, "Điểm": row.diem, "Số câu đúng": row.soCauDung,
-        "Số câu sai": row.soCauSai, "Nhóm năng lực": labels[row.nhom],
+        "Số câu sai": row.soCauSai, "Nhóm năng lực": labels[row.nhom], "Số lần vi phạm": row.soViPham,
+        "Loại vi phạm": row.loaiViPham.join(", "), "Thời điểm vi phạm gần nhất": row.viPhamGanNhat || "",
+        "Tự động thu bài do vi phạm": row.tuDongThuBaiDoViPham ? "Có" : "Không",
       })));
       overview["!cols"] = [{ wch: 24 }, { wch: 18 }];
-      detail["!cols"] = [12, 24, 12, 18, 22, 10, 14, 14, 22].map((wch) => ({ wch }));
-      XLSX.utils.book_append_sheet(wb, overview, "Tong quan");
-      XLSX.utils.book_append_sheet(wb, detail, "Chi tiet");
+      detail["!cols"] = [12, 24, 12, 18, 22, 10, 14, 14, 22, 16, 28, 24, 24].map((wch) => ({ wch }));
+      XLSX.utils.book_append_sheet(wb, overview, "Tổng quan");
+      XLSX.utils.book_append_sheet(wb, detail, "Chi tiết");
       const body = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       return new Response(body, { headers: {
         "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -62,10 +67,11 @@ export async function GET(request: NextRequest) {
     const doc = React.createElement(Document, null,
       React.createElement(Page, { size: "A4", style: styles.page },
         React.createElement(Text, { style: styles.title }, "BÁO CÁO KẾT QUẢ THI THỬ"),
-        React.createElement(Text, { style: styles.muted }, `Xuất lúc ${new Date().toLocaleString("vi-VN")} - dữ liệu đúng phạm vi phân quyền`),
+        React.createElement(Text, { style: styles.muted }, `Xuất lúc ${new Date().toLocaleString("vi-VN")} - chỉ gồm dữ liệu người dùng được phép xem`),
         React.createElement(View, { style: styles.kpis },
           React.createElement(View, { style: styles.card }, React.createElement(Text, null, `Số bài: ${report.rows.length}`)),
           React.createElement(View, { style: styles.card }, React.createElement(Text, null, `Điểm trung bình: ${report.diemTrungBinh.toFixed(2)}`)),
+          React.createElement(View, { style: styles.card }, React.createElement(Text, null, `Vi phạm: ${report.tongViPham} lượt / ${report.soBaiCoViPham} bài`)),
         ),
         React.createElement(View, { style: [styles.row, styles.h] },
           React.createElement(Text, { style: styles.c1 }, "Học sinh"), React.createElement(Text, { style: styles.c2 }, "Lớp"),
@@ -79,6 +85,8 @@ export async function GET(request: NextRequest) {
           React.createElement(Text, { style: styles.c4 }, row.diem.toFixed(2)),
           React.createElement(Text, { style: styles.c5 }, labels[row.nhom]),
         )),
+        React.createElement(Text, { style: { marginTop: 14, fontWeight: 700 } }, "THỐNG KÊ VI PHẠM"),
+        ...report.rows.filter((row) => row.soViPham > 0).map((row) => React.createElement(Text, { key: `vp-${row.baiLamId}`, style: { marginTop: 4 } }, `${row.hoTen} (${row.maSo}) - ${row.mon}: ${row.soViPham} lần${row.tuDongThuBaiDoViPham ? " - Tự động thu bài" : ""} - ${row.loaiViPham.join(", ")}`)),
         React.createElement(Text, { fixed: true, render: ({ pageNumber, totalPages }) => `Trang ${pageNumber}/${totalPages}`, style: { position: "absolute", bottom: 15, right: 32, color: "#64748b" } }),
       ),
     );
@@ -88,7 +96,10 @@ export async function GET(request: NextRequest) {
       "content-disposition": 'attachment; filename="bao-cao-thi-thu.pdf"',
     } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Khong the xuat bao cao";
-    return Response.json({ success: false, error: message }, { status: message.startsWith("KHONG_CO_QUYEN") ? 403 : 500 });
+    const khongCoQuyen = error instanceof Error && error.message.startsWith("KHONG_CO_QUYEN");
+    return Response.json(
+      { success: false, error: khongCoQuyen ? "Bạn không có quyền xuất báo cáo này." : "Chưa xuất được báo cáo. Vui lòng thử lại." },
+      { status: khongCoQuyen ? 403 : 500 },
+    );
   }
 }

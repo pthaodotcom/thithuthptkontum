@@ -37,8 +37,8 @@ async function layNguCanhGiaoVien() {
     .eq("tai_khoan_id", session.sub)
     .maybeSingle();
   const mon = Array.isArray(taiKhoan?.mon) ? taiKhoan.mon[0] : taiKhoan?.mon;
-  if (!taiKhoan?.mon_id || !mon) throw new Error("Giáo viên chưa được gán môn");
-  if (!mon.ho_tro_ngan_hang_cau_hoi) throw new Error(`Môn ${mon.ten_mon} không thuộc phạm vi ngân hàng câu hỏi và chấm tự động`);
+  if (!taiKhoan?.mon_id || !mon) throw new Error("Bạn chưa được phân công môn học. Vui lòng liên hệ quản trị viên.");
+  if (!mon.ho_tro_ngan_hang_cau_hoi) throw new Error(`Môn ${mon.ten_mon} chưa hỗ trợ soạn câu hỏi trên hệ thống.`);
   return { supabase, session, mon, monId: taiKhoan.mon_id };
 }
 
@@ -58,15 +58,15 @@ async function damBaoMetadata(monId: string, baiHocId: string, mucDoId: string, 
       .maybeSingle(),
     supabase.from("muc_do_nhan_thuc").select("muc_do_id").eq("muc_do_id", mucDoId).maybeSingle(),
   ]);
-  if (!baiHoc) throw new Error("Bài học không hoạt động hoặc không thuộc môn của giáo viên");
-  if (!mucDo) throw new Error("Mức độ nhận thức không tồn tại");
+  if (!baiHoc) throw new Error("Bài học đã ngừng sử dụng hoặc không thuộc môn bạn phụ trách.");
+  if (!mucDo) throw new Error("Mức độ đã chọn không còn sử dụng. Vui lòng chọn lại.");
 }
 
 async function luuCauHoi(duLieu: DuLieuCauHoi): Promise<ActionResult> {
   try {
     const input = cauHoiSchema.parse(duLieu);
     const { supabase, session, mon, monId } = await layNguCanhGiaoVien();
-    if (!phanDuocCauHinh(mon, input.phan)) return { success: false, error: `Môn không cấu hình Phần ${input.phan}` };
+    if (!phanDuocCauHinh(mon, input.phan)) return { success: false, error: `Môn này chưa sử dụng Phần ${input.phan}. Vui lòng chọn phần khác.` };
     await damBaoMetadata(monId, input.baiHocId, input.mucDoId, supabase);
     const { data, error } = await supabase.rpc("tao_cau_hoi_cho_duyet", {
       p_bai_hoc_id: input.baiHocId,
@@ -77,7 +77,7 @@ async function luuCauHoi(duLieu: DuLieuCauHoi): Promise<ActionResult> {
       p_chi_tiet: input.chiTiet.map((item) => ({ noi_dung: item.noiDung, la_dap_an_dung: item.laDapAnDung })),
       p_nguoi_tao_id: session.sub,
     });
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa lưu được câu hỏi. Vui lòng kiểm tra nội dung và thử lại." };
     return { success: true, id: data as string };
   } catch (error) {
     const message = error instanceof z.ZodError ? error.issues[0]?.message : error instanceof Error ? error.message : "Có lỗi xảy ra";
@@ -96,7 +96,7 @@ export async function guiLaiCauHoi(cauHoiId: string, duLieu: DuLieuCauHoi): Prom
     const id = z.string().uuid().parse(cauHoiId);
     const input = cauHoiSchema.parse(duLieu);
     const { supabase, session, mon, monId } = await layNguCanhGiaoVien();
-    if (!phanDuocCauHinh(mon, input.phan)) return { success: false, error: `Môn không cấu hình Phần ${input.phan}` };
+    if (!phanDuocCauHinh(mon, input.phan)) return { success: false, error: `Môn này chưa sử dụng Phần ${input.phan}. Vui lòng chọn phần khác.` };
     await damBaoMetadata(monId, input.baiHocId, input.mucDoId, supabase);
     const { data: cauHoi } = await supabase
       .from("cau_hoi")
@@ -115,7 +115,7 @@ export async function guiLaiCauHoi(cauHoiId: string, duLieu: DuLieuCauHoi): Prom
       p_dap_an_phan3: input.phan === "III" ? input.dapAnPhan3 : null,
       p_chi_tiet: input.chiTiet.map((item) => ({ noi_dung: item.noiDung, la_dap_an_dung: item.laDapAnDung })),
     });
-    if (error) return { success: false, error: error.message.replaceAll("_", " ") };
+    if (error) return { success: false, error: "Chưa gửi lại được câu hỏi. Vui lòng tải lại trang và thử lại." };
     revalidatePath("/soan-cau-hoi");
     revalidatePath("/duyet-cau-hoi");
     return { success: true, id };

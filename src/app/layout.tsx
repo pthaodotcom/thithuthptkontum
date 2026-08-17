@@ -5,7 +5,7 @@ import "katex/dist/katex.min.css";
 
 export const metadata: Metadata = {
   title: "Hệ thống Thi thử Trực tuyến cấp Trường THPT",
-  description: "Xem ke-hoach-trien-khai-webapp.md o thu muc du-an-thi-thu-thpt/ de biet toan bo pham vi.",
+  description: "Hệ thống thi thử tốt nghiệp THPT dành cho nhà trường, giáo viên và học sinh.",
 };
 
 const beVietnamPro = Be_Vietnam_Pro({

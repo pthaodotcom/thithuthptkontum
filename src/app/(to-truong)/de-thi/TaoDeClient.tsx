@@ -61,14 +61,14 @@ export default function TaoDeClient({ mon, chuyenDe, mucDo, dotThi, deThi, cauHo
     if (result.success && "hopLe" in result && result.hopLe) {
       const draft = await chuanBiPreview(matrix, codes);
       if (draft.success && "maDe" in draft && draft.maDe) { setErrors([]); setPreview(draft.maDe); setStep(3); }
-      else setErrors([draft.error ?? "Không thể bốc câu"]);
+      else setErrors([draft.error ?? "Chưa chọn được câu hỏi. Vui lòng kiểm tra ma trận đề."]);
     } else if ("thieu" in result) {
       setErrors([
         ...result.thieu.map((item) => `Phần ${item.phan}: thiếu ${item.thieu} câu`),
         ...result.saiTong.map((item) => `Phần ${item.phan}: cần ${item.batBuoc}, đang chọn ${item.thucTe}`),
       ]);
     } else {
-      setErrors([result.error ?? "Có lỗi"]);
+      setErrors([result.error ?? "Chưa hoàn tất được đề thi. Vui lòng thử lại."]);
     }
   });
 
@@ -105,14 +105,14 @@ export default function TaoDeClient({ mon, chuyenDe, mucDo, dotThi, deThi, cauHo
       <select id="dot-thi" className="h-11 w-full rounded-lg border bg-white px-3" aria-label="Chọn đợt thi" value={dotThiId} onChange={(event) => setDotThiId(event.target.value)}>
         {dotThi.map((item) => <option key={item.dot_thi_id} value={item.dot_thi_id}>{item.ten_dot_thi}</option>)}
       </select></div>
-      <fieldset><legend className="mb-2 text-sm font-semibold">Số mã đề nhánh</legend><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{[1,2,3,4].map(count=><button type="button" key={count} onClick={()=>setCodes(count)} className={`min-h-11 cursor-pointer rounded-lg border px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${codes===count?"border-blue-600 bg-blue-600 text-white":"bg-white hover:bg-slate-50"}`} aria-pressed={codes===count}>{count} mã đề</button>)}</div>{codes===1&&<p className="mt-2 text-sm text-amber-700">Chỉ có một mã đề. Hãy cân nhắc dùng nhiều mã để hạn chế trao đổi bài.</p>}</fieldset>
+      <fieldset><legend className="mb-2 text-sm font-semibold">Số mã đề</legend><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{[1,2,3,4].map(count=><button type="button" key={count} onClick={()=>setCodes(count)} className={`min-h-11 cursor-pointer rounded-lg border px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${codes===count?"border-blue-600 bg-blue-600 text-white":"bg-white hover:bg-slate-50"}`} aria-pressed={codes===count}>{count} mã đề</button>)}</div>{codes===1&&<p className="mt-2 text-sm text-amber-700">Chỉ có một mã đề. Hãy cân nhắc dùng nhiều mã để hạn chế trao đổi bài.</p>}</fieldset>
       <p className="rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-800">Bộ đề được tạo một lần cho môn {mon.ten_mon} trong đợt này và dùng chung cho mọi ca có học sinh đăng ký môn.</p>
       <div className="flex justify-end"><Button disabled={!dotThiId} onClick={()=>codes===1&&!confirm("Chỉ tạo một mã đề. Tiếp tục?")?undefined:setStep(2)}>Tiếp tục lập ma trận</Button></div>
     </section>}
 
     {step === 2 && <section className="space-y-5 rounded-xl border bg-white p-5">
       <p className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        Cấu hình này áp dụng giống nhau cho cả {codes} mã đề. Hệ thống cần tổng cộng các bộ câu độc lập, không trùng câu giữa các mã.
+        Cấu trúc này áp dụng cho cả {codes} mã đề. Mỗi mã đề sẽ dùng một bộ câu khác nhau.
       </p>
 
       {parts.map((phan) => <MatrixSection
@@ -130,7 +130,7 @@ export default function TaoDeClient({ mon, chuyenDe, mucDo, dotThi, deThi, cauHo
       {errors.length > 0 && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3">
         {errors.map((error, index) => <p key={index} className="text-sm text-red-700">{error}</p>)}
       </div>}
-      <div className="flex justify-between gap-2"><Button variant="outline" onClick={()=>setStep(1)}>Quay lại</Button><Button disabled={pending} onClick={validate}>{pending?"Đang bốc câu…":"Bốc câu và xem trước"}</Button></div>
+      <div className="flex justify-between gap-2"><Button variant="outline" onClick={()=>setStep(1)}>Quay lại</Button><Button disabled={pending} onClick={validate}>{pending?"Đang chọn câu…":"Chọn câu tự động và xem trước"}</Button></div>
     </section>}
 
     {step === 3 && <section className="space-y-5 rounded-xl border bg-white p-5">
@@ -145,7 +145,7 @@ export default function TaoDeClient({ mon, chuyenDe, mucDo, dotThi, deThi, cauHo
         <div>
           <h2 className="font-bold">Đã tạo và giao đề thành công</h2>
           <p className="mt-1 text-sm">Đợt thi: <strong>{selectedDotThi?.ten_dot_thi}</strong> · {codes} mã đề</p>
-          <p className="mt-1 text-sm text-emerald-800">Nội dung và barem đã được lưu thành bản snapshot. Bạn có thể xem lại đề trong danh sách bên dưới.</p>
+          <p className="mt-1 text-sm text-emerald-800">Đề và cách tính điểm đã được lưu đúng như lúc giao cho học sinh. Bạn có thể xem lại trong danh sách bên dưới.</p>
         </div>
       </div>
     </section>}
@@ -261,17 +261,17 @@ function MatrixSection({ phan, required, matrix, chuyenDe, mucDo, cauHoiKhaDung,
     <div className="flex flex-wrap items-start justify-between gap-3 border-b bg-slate-50 px-4 py-3">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-bold">Phần {phan}: Cấu hình ma trận đề thi</h2>
+          <h2 className="font-bold">Phần {phan}: Ma trận đề thi</h2>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${overLimit ? "bg-red-100 text-red-700" : complete ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}>
             {total}/{required} câu
           </span>
         </div>
         <p className={`mt-1 text-xs ${overLimit ? "font-semibold text-red-600" : "text-slate-500"}`}>
-          {overLimit ? `Đã nhập vượt ${total - required} câu. Vui lòng giảm số lượng.` : complete ? "Đã cấu hình đủ số câu." : `Còn ${required - total} câu cần cấu hình.`}
+          {overLimit ? `Đã nhập vượt ${total - required} câu. Vui lòng giảm số lượng.` : complete ? "Đã chọn đủ số câu." : `Còn ${required - total} câu cần chọn.`}
         </p>
       </div>
       <Button type="button" size="sm" variant="ghost" disabled={total === 0} onClick={onClear}>
-        <RotateCcw className="mr-1.5 h-4 w-4" />Xóa nhanh
+        <RotateCcw className="mr-1.5 h-4 w-4" />Xóa số lượng đã nhập
       </Button>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" aria-label={`Tiến độ Phần ${phan}: ${total} trên ${required} câu`} role="progressbar" aria-valuemin={0} aria-valuemax={required} aria-valuenow={total}>
         <div className={`h-full rounded-full transition-[width] ${overLimit ? "bg-red-500" : complete ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${overLimit ? 100 : progress}%` }} />

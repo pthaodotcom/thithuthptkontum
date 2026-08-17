@@ -109,7 +109,7 @@ export default function MonHocClient({ initialData }: { initialData: any[] }) {
               <TableHead>Loại môn</TableHead>
               <TableHead>Ca</TableHead>
               <TableHead>Tổ trưởng</TableHead>
-              <TableHead>Barem</TableHead>
+            <TableHead>Cách tính điểm</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
@@ -138,9 +138,9 @@ export default function MonHocClient({ initialData }: { initialData: any[] }) {
                     {item.to_truong?.ho_ten || <span className="text-muted-foreground italic text-xs">Chưa có</span>}
                   </TableCell>
                   <TableCell className="text-xs space-y-1 text-muted-foreground">
-                     {item.phan1_so_cau && <div>PI: {item.phan1_so_cau}c x {item.phan1_diem_moi_cau}đ</div>}
-                     {item.phan2_so_cau && <div>PII: {item.phan2_so_cau}c (tối đa {item.phan2_diem_4y}đ)</div>}
-                     {item.phan3_so_cau && <div>PIII: {item.phan3_so_cau}c x {item.phan3_diem_moi_cau}đ</div>}
+                     {item.phan1_so_cau && <div>Phần I: {item.phan1_so_cau} câu × {item.phan1_diem_moi_cau} điểm</div>}
+                     {item.phan2_so_cau && <div>Phần II: {item.phan2_so_cau} câu (tối đa {item.phan2_diem_4y} điểm mỗi câu)</div>}
+                     {item.phan3_so_cau && <div>Phần III: {item.phan3_so_cau} câu × {item.phan3_diem_moi_cau} điểm</div>}
                   </TableCell>
                   <TableCell>
                     <button onClick={() => toggleTrangThai(item)} className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-colors ${item.trang_thai === 'DangDung' ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
@@ -216,7 +216,7 @@ export default function MonHocClient({ initialData }: { initialData: any[] }) {
             )}
 
             <div className="border-t pt-6 sm:col-span-3">
-              <h3 className="mb-4 text-base font-semibold text-foreground">Cấu trúc đề & Barem (Tổng = 10)</h3>
+              <h3 className="mb-4 text-base font-semibold text-foreground">Cấu trúc đề và cách tính điểm (tổng 10 điểm)</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-3 rounded-lg border border-border bg-muted/60 p-4">
                   <div className="font-semibold text-sm text-foreground">Phần I (4 lựa chọn)</div>
@@ -317,7 +317,7 @@ export default function MonHocClient({ initialData }: { initialData: any[] }) {
             )}
 
             <div className="border-t pt-6 sm:col-span-3">
-              <h3 className="mb-4 text-base font-semibold text-foreground">Cấu trúc đề & Barem (Tổng = 10)</h3>
+              <h3 className="mb-4 text-base font-semibold text-foreground">Cấu trúc đề và cách tính điểm (tổng 10 điểm)</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-3 rounded-lg border border-border bg-muted/60 p-4">
                   <div className="font-semibold text-sm text-foreground">Phần I (4 lựa chọn)</div>

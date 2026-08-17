@@ -38,18 +38,28 @@ export async function GET(req: NextRequest) {
       });
       return apiThanhCong({ daXuLy: true, jobId: job.id, loaiJob: job.loai_job, ketQua: data });
     } else if (job.loai_job === "sinh_nhan_xet_ai" || job.loai_job === "thu_lai_nhan_xet_ai") {
-      const { data: bai } = await supabase.from("bai_lam_thi").select("bai_lam_id,diem_tong,hoc_sinh_tai_khoan_id,ca_thi_mon!inner(mon_id)").eq("bai_lam_id", job.tham_chieu_id).single();
+      const { data: bai } = await supabase.from("bai_lam_thi")
+        .select("bai_lam_id,diem_tong,hoc_sinh_tai_khoan_id,ca_thi_mon!inner(mon_id),phan_tich_chuyen_de(ty_le_dung,chuyen_de(ten_chuyen_de))")
+        .eq("bai_lam_id", job.tham_chieu_id).single();
       if (!bai) throw new Error("KHONG_TIM_THAY_BAI_LAM");
       const ctm = Array.isArray(bai.ca_thi_mon) ? bai.ca_thi_mon[0] : bai.ca_thi_mon;
       if (!ctm) throw new Error("BAI_LAM_THIEU_MON");
       const nhom = xepNhomNangLuc(Number(bai.diem_tong));
+      const chuyenDeYeu = (bai.phan_tich_chuyen_de || [])
+        .filter((item) => Number(item.ty_le_dung) < 60)
+        .map((item) => {
+          const cd = Array.isArray(item.chuyen_de) ? item.chuyen_de[0] : item.chuyen_de;
+          return cd?.ten_chuyen_de || "";
+        })
+        .filter(Boolean);
+      const tongSoChuyenDe = (bai.phan_tich_chuyen_de || []).length;
       let noiDung: string;
       let nguon = "AI";
       try {
-        noiDung = await sinhNhanXetGemini({ diem: Number(bai.diem_tong), nhom });
+        noiDung = await sinhNhanXetGemini({ diem: Number(bai.diem_tong), nhom, chuyenDeYeu, tongSoChuyenDe });
       } catch (errorAi) {
         if (job.so_lan_thu < 3) throw errorAi;
-        noiDung = nhanXetFallback(nhom);
+        noiDung = nhanXetFallback(nhom, chuyenDeYeu, Number(bai.diem_tong), tongSoChuyenDe);
         nguon = "Fallback";
       }
       await supabase.from("nhan_xet_ai").upsert({ bai_lam_id: bai.bai_lam_id, noi_dung: noiDung, nguon, so_lan_thu_lai: job.so_lan_thu, thoi_diem_sinh: new Date().toISOString() }, { onConflict: "bai_lam_id" });

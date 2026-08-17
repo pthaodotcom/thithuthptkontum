@@ -31,6 +31,7 @@ const ROUTE_PREFIX_VAI_TRO: Record<string, string[]> = {
   "/to-truong-bo-mon": ["Admin"],
   "/phan-cong-giang-day": ["Admin"],
   "/dot-thi": ["Admin"],
+  "/mo-thi-ngay": ["Admin"],
   "/giam-sat-ca-thi": ["Admin"],
   "/bao-cao": ["Admin"],
   "/bao-cao-hoc-sinh": ["Admin"],

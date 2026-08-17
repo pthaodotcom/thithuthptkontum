@@ -63,7 +63,7 @@ export default function MonitorClient() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-bold text-foreground">Quản lý vi phạm</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Theo dõi các vi phạm được hệ thống tự động ghi nhận trong quá trình làm bài.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Xem các lần học sinh sao chép nội dung, rời màn hình hoặc mất kết nối trong khi làm bài.</p>
       </header>
 
       {error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertTriangle className="h-4 w-4" />{error}</div>}
@@ -71,7 +71,7 @@ export default function MonitorClient() {
       <div className="flex flex-wrap gap-2">
         <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium">Tổng vi phạm: {summary.total}</span>
         <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">Học sinh vi phạm: {summary.students}</span>
-        <span className="rounded-full bg-destructive/10 px-3 py-1 text-sm font-medium text-destructive">Đạt ngưỡng xử lý: {summary.threshold}</span>
+        <span className="rounded-full bg-destructive/10 px-3 py-1 text-sm font-medium text-destructive">Cần kiểm tra: {summary.threshold}</span>
       </div>
 
       <div className="overflow-auto rounded-xl border border-border bg-card">
@@ -88,10 +88,10 @@ export default function MonitorClient() {
                 <TableCell><p className="font-medium">{account?.ho_ten}</p><p className="text-xs text-muted-foreground">{account?.ma_so}</p></TableCell>
                 <TableCell>{exam?.ca_thi?.dot_thi?.ten_dot_thi}</TableCell>
                 <TableCell>{exam?.mon?.ten_mon}</TableCell>
-                <TableCell>{latest ? (NHAN_LOAI[latest.loai_vi_pham] ?? latest.loai_vi_pham) : "—"}</TableCell>
+                <TableCell>{latest ? (NHAN_LOAI[latest.loai_vi_pham] ?? "Vi phạm khác") : "—"}</TableCell>
                 <TableCell><span className="font-semibold text-destructive">{violations.length}</span></TableCell>
                 <TableCell>{latest && new Date(latest.thoi_diem).toLocaleString("vi-VN")}</TableCell>
-                <TableCell>{violations.length >= 3 ? <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">Đạt ngưỡng xử lý</span> : <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">Đã ghi nhận</span>}</TableCell>
+                <TableCell>{violations.length >= 3 ? <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">Cần kiểm tra</span> : <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">Đã ghi nhận</span>}</TableCell>
                 <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => setSelected(item)}><Eye className="mr-1 h-4 w-4" />Chi tiết</Button></TableCell>
               </TableRow>;
             })}
@@ -105,9 +105,9 @@ export default function MonitorClient() {
           {selected && <div className="space-y-3">
             <p className="text-sm">Học sinh: <b>{(Array.isArray(selected.tai_khoan) ? selected.tai_khoan[0] : selected.tai_khoan)?.ho_ten}</b></p>
             <div className="max-h-80 space-y-2 overflow-auto">
-              {[...(selected.vi_pham ?? [])].sort((a,b) => Date.parse(b.thoi_diem)-Date.parse(a.thoi_diem)).map((viPham, index) => <div key={viPham.id} className="flex items-center justify-between rounded-lg border p-3 text-sm"><span><b>Lần {selected.vi_pham!.length - index}:</b> {NHAN_LOAI[viPham.loai_vi_pham] ?? viPham.loai_vi_pham}</span><time className="text-muted-foreground">{new Date(viPham.thoi_diem).toLocaleString("vi-VN")}</time></div>)}
+              {[...(selected.vi_pham ?? [])].sort((a,b) => Date.parse(b.thoi_diem)-Date.parse(a.thoi_diem)).map((viPham, index) => <div key={viPham.id} className="flex items-center justify-between rounded-lg border p-3 text-sm"><span><b>Lần {selected.vi_pham!.length - index}:</b> {NHAN_LOAI[viPham.loai_vi_pham] ?? "Vi phạm khác"}</span><time className="text-muted-foreground">{new Date(viPham.thoi_diem).toLocaleString("vi-VN")}</time></div>)}
             </div>
-            <p className="text-xs text-muted-foreground">Trạng thái bài thi: {NHAN_TRANG_THAI[selected.trang_thai] ?? selected.trang_thai}</p>
+            <p className="text-xs text-muted-foreground">Trạng thái bài thi: {NHAN_TRANG_THAI[selected.trang_thai] ?? "Chưa xác định"}</p>
           </div>}
         </DialogContent>
       </Dialog>

@@ -17,7 +17,7 @@ const BodySchema = z.object({
 export async function POST(req: NextRequest) {
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Du lieu khong hop le" }, { status: 400 });
+    return NextResponse.json({ error: "Vui lòng nhập mã số và mật khẩu." }, { status: 400 });
   }
 
   const ketQua = await dangNhap(parsed.data.ma_so, parsed.data.mat_khau);

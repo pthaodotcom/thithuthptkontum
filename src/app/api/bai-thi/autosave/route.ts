@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return apiLoi("DU_LIEU_KHONG_HOP_LE", "Câu trả lời không hợp lệ", 422, parsed.error.flatten());
   const key = req.headers.get("idempotency-key");
   if (!key || !z.string().uuid().safeParse(key).success)
-    return apiLoi("THIEU_IDEMPOTENCY_KEY", "Idempotency-Key phai la UUID", 400);
+    return apiLoi("THIEU_IDEMPOTENCY_KEY", "Không thể lưu câu trả lời. Vui lòng tải lại trang.", 400);
   const supabase = taoSupabaseServiceRole();
   const { data, error } = await supabase.rpc("luu_bai_idempotent", {
     p_bai_lam_id: parsed.data.baiLamId,
@@ -41,12 +41,12 @@ export async function POST(req: NextRequest) {
   });
   if (error) {
     if (error.message.includes("IDEMPOTENCY_CONFLICT"))
-      return apiLoi("IDEMPOTENCY_CONFLICT", "Khoa da duoc dung voi payload khac", 409);
+      return apiLoi("IDEMPOTENCY_CONFLICT", "Câu trả lời vừa thay đổi. Hệ thống sẽ lưu lại ở lần tiếp theo.", 409);
     if (error.message.includes("KHONG_TIM_THAY_BAI"))
       return apiLoi("KHONG_TIM_THAY_BAI", "Không tìm thấy bài làm", 404);
     if (error.message.includes("BAI_DA_KHOA"))
       return apiLoi("BAI_DA_KHOA", "Bài làm không còn nhận câu trả lời", 409);
-    return apiLoi("LUU_THAT_BAI", "Không thể lưu bài", 500);
+    return apiLoi("LUU_THAT_BAI", "Chưa lưu được câu trả lời. Vui lòng kiểm tra kết nối mạng.", 500);
   }
   const result = Array.isArray(data) ? data[0] : data;
   const body = result?.response_body ?? { data: { daLuu: 0 } };

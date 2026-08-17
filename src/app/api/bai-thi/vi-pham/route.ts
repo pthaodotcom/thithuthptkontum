@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     bai_lam_id: parsed.data.baiLamId,
     loai_vi_pham: parsed.data.loai,
   });
-  if (error && error.code !== "23505") return apiLoi("GHI_NHAN_THAT_BAI", error.message, 500);
+  if (error && error.code !== "23505") return apiLoi("GHI_NHAN_THAT_BAI", "Chưa ghi nhận được sự kiện. Bài làm của bạn vẫn được giữ lại.", 500);
   const { count } = await supabase.from("vi_pham").select("id", { count: "exact", head: true }).eq("bai_lam_id", parsed.data.baiLamId);
   const soViPham = count ?? 0;
   return apiThanhCong({ daGhiNhan: !error, soViPham, tuDongThuBai: coTuDongThuBai(soViPham) });

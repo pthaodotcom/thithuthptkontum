@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   const key = req.headers.get("idempotency-key");
   if (!key || !z.string().uuid().safeParse(key).success)
-    return apiLoi("THIEU_IDEMPOTENCY_KEY", "Idempotency-Key phai la UUID", 400);
+    return apiLoi("THIEU_IDEMPOTENCY_KEY", "Không thể nộp bài. Vui lòng tải lại trang và thử lại.", 400);
   const supabase = taoSupabaseServiceRole();
   const { data, error } = await supabase.rpc("nop_bai_idempotent", {
     p_bai_lam_id: parsed.data.baiLamId,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     if (error.message.includes("IDEMPOTENCY_CONFLICT"))
-      return apiLoi("IDEMPOTENCY_CONFLICT", "Khoa da duoc dung voi payload khac", 409);
+      return apiLoi("IDEMPOTENCY_CONFLICT", "Yêu cầu nộp bài đã thay đổi. Vui lòng thử lại.", 409);
     const mapped = loiNghiepVu[error.message];
     if (mapped) return apiLoi(mapped.code, mapped.message, mapped.status);
     console.error("nop_va_cham_bai failed", {
@@ -80,12 +80,12 @@ export async function POST(req: NextRequest) {
       message: error.message,
       details: error.details,
     });
-    return apiLoi("NOP_BAI_THAT_BAI", "Không thể nộp bài", 500);
+    return apiLoi("NOP_BAI_THAT_BAI", "Chưa nộp được bài. Vui lòng kiểm tra kết nối mạng và thử lại.", 500);
   }
 
   const ketQua = Array.isArray(data) ? data[0] : data;
   if (!ketQua?.response_body) {
-    return apiLoi("NOP_BAI_THAT_BAI", "Không nhận được kết quả chấm bài", 500);
+    return apiLoi("NOP_BAI_THAT_BAI", "Bài đã gửi nhưng chưa nhận được kết quả. Vui lòng tải lại trang để kiểm tra.", 500);
   }
   return NextResponse.json(ketQua.idempotency_replay
     ? { ...ketQua.response_body, idempotencyReplay: true }

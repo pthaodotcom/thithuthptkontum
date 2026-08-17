@@ -16,6 +16,6 @@ export async function xoaHoacVoHieuHoa(cauHoiId:string) {
   try { z.string().uuid().parse(cauHoiId); const {supabase,cau}=await context(cauHoiId);
     const session=await laySessionHienHanh();
     const {error}=await supabase.rpc("quan_tri_cau_hoi",{p_cau_hoi_id:cauHoiId,p_to_truong_id:session!.sub,p_hanh_dong:cau.trang_thai_su_dung==="ChuaDung"?"Xoa":"VoHieuHoa",p_nhom_id:null});
-    if(error) throw new Error(error.message); revalidatePath("/ngan-hang-cau-hoi"); return {success:true,voHieuHoa:cau.trang_thai_su_dung!=="ChuaDung"};
-  } catch(e){return {success:false,error:e instanceof Error?e.message:"Có lỗi"};}
+    if(error) throw new Error("Chưa cập nhật được câu hỏi. Vui lòng tải lại trang và thử lại."); revalidatePath("/ngan-hang-cau-hoi"); return {success:true,voHieuHoa:cau.trang_thai_su_dung!=="ChuaDung"};
+  } catch(e){return {success:false,error:e instanceof Error?e.message:"Chưa cập nhật được câu hỏi. Vui lòng thử lại."};}
 }

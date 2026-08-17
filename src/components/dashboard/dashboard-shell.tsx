@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { GraduationCap, Menu, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, GraduationCap, Menu, Sparkles } from "lucide-react";
 
 import { DashboardNavLink } from "@/components/dashboard/nav-link";
 import LogoutButton from "@/components/dashboard/logout-button";
@@ -73,13 +74,18 @@ export async function DashboardShell({
           <Navigation navGroups={navGroups} label="Điều hướng chính" />
         </div>
         <div className="border-t border-border/70 bg-muted/30 p-4">
-          <div className="mb-3 flex items-center gap-3 rounded-xl bg-card px-2 py-2">
+          <Link
+            href="/thong-tin-tai-khoan"
+            aria-label="Xem thông tin tài khoản cá nhân"
+            className="group mb-3 flex min-h-14 cursor-pointer items-center gap-3 rounded-xl bg-card px-2 py-2 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-sm font-bold text-accent ring-1 ring-accent/15">{initial}</span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{userName}</p>
               <p className="truncate text-xs text-muted-foreground">{userRole}</p>
             </div>
-          </div>
+            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
           <LogoutButton />
         </div>
       </aside>
@@ -102,13 +108,18 @@ export async function DashboardShell({
               <span className="sr-only">Mở menu</span>
             </summary>
             <div className="absolute right-0 mt-2 max-h-[calc(100vh-5rem)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-border bg-card p-3 shadow-2xl">
-              <div className="mb-3 flex items-center gap-3 rounded-xl bg-muted/60 p-3">
+              <Link
+                href="/thong-tin-tai-khoan"
+                aria-label="Xem thông tin tài khoản cá nhân"
+                className="group mb-3 flex min-h-14 cursor-pointer items-center gap-3 rounded-xl bg-muted/60 p-3 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 font-bold text-accent">{initial}</span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{userName}</p>
                   <p className="truncate text-xs text-muted-foreground">{userRole}</p>
                 </div>
-              </div>
+                <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+              </Link>
               <Navigation navGroups={navGroups} label="Điều hướng di động" />
               <div className="mt-3 border-t border-border pt-3"><LogoutButton /></div>
             </div>
@@ -120,7 +131,7 @@ export async function DashboardShell({
         <div className="mx-auto max-w-[1540px] px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-9">
           <div className="mb-5 flex items-center gap-2 text-xs font-medium text-muted-foreground lg:mb-7">
             <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            Không gian học tập và quản lý kỳ thi
+            Thi thử trực tuyến
           </div>
           {children}
         </div>

@@ -18,7 +18,7 @@ function loiFriendlyTuDb(error: { code?: string; message: string }) {
   if (error.code === "23505") {
     return "Tên môn hoặc thứ tự ca bắt buộc đã được dùng bởi môn khác đang hoạt động.";
   }
-  return error.message;
+  return "Chưa lưu được môn học. Vui lòng kiểm tra thông tin và thử lại.";
 }
 
 export async function taoMonHoc(data: any) {
@@ -102,7 +102,7 @@ export async function xoaMonHoc(mon_id: string) {
     success: false,
     error: error.code === "23503"
       ? "Không thể xóa môn đã có dữ liệu liên quan."
-      : error.message,
+      : "Chưa xóa được môn học. Vui lòng thử lại.",
   };
   revalidatePath("/mon-hoc");
   return { success: true };
@@ -112,7 +112,7 @@ export async function doiTrangThaiMon(mon_id: string, trang_thai: "DangDung" | "
   const supabase = taoSupabaseServiceRole();
   const { error } = await supabase.from("mon").update({ trang_thai }).eq("mon_id", mon_id);
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "Chưa thay đổi được trạng thái môn học. Vui lòng thử lại." };
   }
   revalidatePath("/mon-hoc");
   return { success: true };

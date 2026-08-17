@@ -24,7 +24,7 @@ export default async function MonHocPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Quản lý Môn học</h1>
-          <p className="text-muted-foreground text-sm mt-1">Cấu hình danh mục môn, loại môn và barem điểm.</p>
+      <p className="text-muted-foreground text-sm mt-1">Thêm môn học, chọn loại môn và thiết lập cách tính điểm.</p>
         </div>
       </div>
       <MonHocClient initialData={dsMon || []} />

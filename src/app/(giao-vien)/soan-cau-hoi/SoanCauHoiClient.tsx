@@ -94,7 +94,7 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
         setImportResult(result);
         result.success ? toast.success(`Đã nhập ${result.daNhap}/${result.tong} câu hỏi`) : toast.error(result.error);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Không thể import file. Vui lòng thử lại.";
+        const message = error instanceof Error ? error.message : "Chưa đọc được file. Vui lòng kiểm tra file rồi thử lại.";
         setImportResult({ success: false, error: message, daNhap: 0, tong: 0, loi: [] });
         toast.error(message);
       }
@@ -105,24 +105,24 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
     <main className="min-h-screen bg-slate-50 p-6 text-slate-900">
       <div className="space-y-8">
         <header className="flex flex-wrap items-start justify-between gap-4">
-          <div><p className="text-sm font-semibold text-blue-600">Môn {mon}</p><h1 className="text-2xl font-bold">Soạn câu hỏi</h1><p className="mt-1 text-sm text-slate-500">Câu hỏi mới luôn được gửi ở trạng thái Chờ duyệt.</p></div>
+          <div><p className="text-sm font-semibold text-blue-600">Môn {mon}</p><h1 className="text-2xl font-bold">Soạn câu hỏi</h1><p className="mt-1 text-sm text-slate-500">Sau khi gửi, câu hỏi sẽ được Tổ trưởng xem và duyệt.</p></div>
           <Link href="/yeu-cau-chinh-sua" className="text-sm font-semibold text-blue-600 hover:underline">Yêu cầu chỉnh sửa câu đã duyệt →</Link>
         </header>
 
         <div className="flex gap-1 rounded-xl border bg-white p-1.5 shadow-sm">
           <button type="button" onClick={() => setActiveTab("manual")} className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg px-5 text-base font-semibold transition-colors ${activeTab === "manual" ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-            <PlusCircle className="h-5 w-5" />Thêm thủ công
+            <PlusCircle className="h-5 w-5" />Tạo từng câu
           </button>
           <button type="button" onClick={() => setActiveTab("import")} className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg px-5 text-base font-semibold transition-colors ${activeTab === "import" ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-            <FileSpreadsheet className="h-5 w-5" />Import Excel / Word
+            <FileSpreadsheet className="h-5 w-5" />Nhập từ Excel / Word
           </button>
         </div>
 
-        {!chuyenDe.length || !mucDo.length ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">Chưa có Chuyên đề/Bài học hoạt động hoặc danh mục Mức độ nhận thức. Không thể soạn câu hỏi.</div> : activeTab === "manual" ? (
+        {!chuyenDe.length || !mucDo.length ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">Chưa có chuyên đề, bài học hoặc mức độ nhận thức để chọn. Vui lòng liên hệ Tổ trưởng bộ môn.</div> : activeTab === "manual" ? (
             <form onSubmit={submit} className="space-y-7 rounded-xl border bg-white p-7 shadow-sm lg:p-8">
               {editingId&&<div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">Đang chỉnh sửa câu hỏi theo yêu cầu của Tổ trưởng</p><p className="mt-1">Hoàn thiện nội dung rồi gửi lại để duyệt.</p></div>}
               <div className="flex items-center justify-between gap-4 border-b pb-5">
-                <div><h2 className="text-xl font-bold">Thêm câu hỏi thủ công</h2><p className="mt-1 text-sm text-slate-500">Điền nội dung và chọn đáp án đúng trước khi gửi duyệt.</p></div>
+                <div><h2 className="text-xl font-bold">Tạo một câu hỏi</h2><p className="mt-1 text-sm text-slate-500">Điền nội dung và chọn đáp án đúng trước khi gửi duyệt.</p></div>
                 <div className="flex gap-2">{phanChoPhep.map((item) => <Button key={item} type="button" variant={phan === item ? "default" : "outline"} onClick={() => setPhan(item)}>Phần {item}</Button>)}</div>
               </div>
               <div className="grid gap-5 lg:grid-cols-[2fr_2fr_1fr]">
@@ -144,10 +144,10 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
             </form>
         ) : (
             <form onSubmit={submitImport} className="space-y-7 rounded-xl border bg-white p-7 shadow-sm lg:p-8">
-              <div className="border-b pb-5"><div className="flex items-center gap-2"><FileSpreadsheet className="h-6 w-6 text-emerald-600" /><h2 className="text-xl font-bold">Import câu hỏi từ Excel / Word</h2></div><p className="mt-2 text-sm text-slate-600">Excel dùng hàng tiêu đề; Word dùng bảng có cùng tên cột. Kích thước tối đa 10 MB.</p></div>
+              <div className="border-b pb-5"><div className="flex items-center gap-2"><FileSpreadsheet className="h-6 w-6 text-emerald-600" /><h2 className="text-xl font-bold">Nhập nhiều câu hỏi từ Excel / Word</h2></div><p className="mt-2 text-sm text-slate-600">Tải file mẫu để xem các cột cần điền. File tải lên không được lớn hơn 10 MB.</p></div>
               <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div className="space-y-3"><Label className="text-base font-semibold">Chọn file dữ liệu</Label><Input className="h-12 cursor-pointer px-4 py-2 text-base md:text-base" name="file" type="file" accept=".xlsx,.xls,.docx" required /></div>
-                <div className="flex gap-3"><Button nativeButton={false} variant="outline" className="h-12 px-6" render={<a href="/api/cau-hoi/mau-import" />}>Tải file Excel mẫu</Button><Button type="submit" className="h-12 px-7" disabled={isPending}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Kiểm tra và import</Button></div>
+                <div className="flex gap-3"><Button nativeButton={false} variant="outline" className="h-12 px-6" render={<a href="/api/cau-hoi/mau-import" />}>Tải file Excel mẫu</Button><Button type="submit" className="h-12 px-7" disabled={isPending}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Kiểm tra và nhập</Button></div>
               </div>
               {importResult && <ImportSummary result={importResult} />}
             </form>
@@ -164,5 +164,5 @@ function SelectField({ label, options, name, value, onChange }: { label: string;
 }
 
 function ImportSummary({ result }: { result: KetQuaImport }) {
-  return <div className={`rounded-lg p-3 text-sm ${result.success ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}><p className="font-semibold">{result.success ? `Đã nhập ${result.daNhap}/${result.tong} câu` : result.error}</p>{result.loi.length > 0 && <div className="mt-2 max-h-48 overflow-auto"><table className="w-full text-xs"><tbody>{result.loi.map((item, index) => <tr key={`${item.dong}-${index}`} className="border-t"><td className="py-1 pr-2">Dòng {item.dong}</td><td className="pr-2 font-mono">{item.ma}</td><td>{item.noiDung}</td></tr>)}</tbody></table></div>}</div>;
+  return <div className={`rounded-lg p-3 text-sm ${result.success ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}><p className="font-semibold">{result.success ? `Đã nhập ${result.daNhap}/${result.tong} câu` : result.error}</p>{result.loi.length > 0 && <div className="mt-2 max-h-48 overflow-auto"><table className="w-full text-xs"><tbody>{result.loi.map((item, index) => <tr key={`${item.dong}-${index}`} className="border-t"><td className="py-1 pr-2">Dòng {item.dong}</td><td>{item.noiDung}</td></tr>)}</tbody></table></div>}</div>;
 }

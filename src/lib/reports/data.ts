@@ -18,6 +18,10 @@ export type ReportRow = {
   soCauSai: number;
   nhom: ReturnType<typeof xepNhomNangLuc>;
   nopLuc: string | null;
+  soViPham: number;
+  loaiViPham: string[];
+  viPhamGanNhat: string | null;
+  tuDongThuBaiDoViPham: boolean;
 };
 
 export type ReportSummary = {
@@ -25,6 +29,9 @@ export type ReportSummary = {
   diemTrungBinh: number;
   phoDiem: { nhan: string; soLuong: number }[];
   nhomNangLuc: { nhom: string; soLuong: number }[];
+  tongViPham: number;
+  soBaiCoViPham: number;
+  soBaiTuDongThu: number;
 };
 
 export type SubjectClassSummary = {
@@ -84,7 +91,7 @@ export async function layBaoCao(filters: { lopId?: string; monId?: string; caThi
   if (filters.lopId && lopDuocXem && !lopDuocXem.has(filters.lopId)) throw new Error("KHONG_CO_QUYEN_LOP");
 
   let query = supabase.from("bai_lam_thi")
-    .select("bai_lam_id,hoc_sinh_tai_khoan_id,diem_tong,so_cau_dung,so_cau_sai,thoi_diem_nop,tai_khoan!bai_lam_thi_hoc_sinh_tai_khoan_id_fkey(ma_so,ho_ten,lop_id,lop(ten_lop,khoi)),ca_thi_mon!inner(mon_id,mon(ten_mon),ca_thi!inner(dot_thi!inner(ten_dot_thi)))")
+    .select("bai_lam_id,hoc_sinh_tai_khoan_id,diem_tong,so_cau_dung,so_cau_sai,thoi_diem_nop,tai_khoan!bai_lam_thi_hoc_sinh_tai_khoan_id_fkey(ma_so,ho_ten,lop_id,lop(ten_lop,khoi)),ca_thi_mon!inner(mon_id,mon(ten_mon),ca_thi!inner(dot_thi!inner(ten_dot_thi))),vi_pham(id,loai_vi_pham,thoi_diem)")
     .eq("trang_thai", "DaNopBai")
     .not("diem_tong", "is", null)
     .order("thoi_diem_nop", { ascending: false });
@@ -106,12 +113,17 @@ export async function layBaoCao(filters: { lopId?: string; monId?: string; caThi
     if (filters.monId && ctm.mon_id !== filters.monId) continue;
     if (filters.lopId && tk.lop_id !== filters.lopId) continue;
     const diem = Number(raw.diem_tong);
+    const viPham = [...(raw.vi_pham || [])].sort((a, b) => Date.parse(b.thoi_diem) - Date.parse(a.thoi_diem));
     rows.push({
       baiLamId: raw.bai_lam_id, hocSinhId: raw.hoc_sinh_tai_khoan_id,
       maSo: tk.ma_so, hoTen: tk.ho_ten, lopId: tk.lop_id, lop: lop?.ten_lop || "Chưa xếp lớp", khoi: lop?.khoi || "Chưa xác định",
       monId: ctm.mon_id, mon: mon.ten_mon, dotThi: dot?.ten_dot_thi || "Đợt thi",
       diem, soCauDung: raw.so_cau_dung || 0, soCauSai: raw.so_cau_sai || 0,
       nhom: xepNhomNangLuc(diem), nopLuc: raw.thoi_diem_nop,
+      soViPham: viPham.length,
+      loaiViPham: [...new Set(viPham.map((item) => item.loai_vi_pham))],
+      viPhamGanNhat: viPham[0]?.thoi_diem || null,
+      tuDongThuBaiDoViPham: viPham.length >= 3,
     });
   }
   const diemTrungBinh = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.diem, 0) / rows.length * 100) / 100 : 0;
@@ -126,5 +138,8 @@ export async function layBaoCao(filters: { lopId?: string; monId?: string; caThi
     rows, diemTrungBinh,
     phoDiem: bins.map((bin) => ({ nhan: bin.nhan, soLuong: rows.filter((row) => bin.test(row.diem)).length })),
     nhomNangLuc: nhomLabels.map((nhom) => ({ nhom, soLuong: rows.filter((row) => row.nhom === nhom).length })),
+    tongViPham: rows.reduce((sum, row) => sum + row.soViPham, 0),
+    soBaiCoViPham: rows.filter((row) => row.soViPham > 0).length,
+    soBaiTuDongThu: rows.filter((row) => row.tuDongThuBaiDoViPham).length,
   };
 }

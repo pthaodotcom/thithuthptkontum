@@ -45,7 +45,7 @@ export default function ExamClient({
   cauHoi: Cau[]; banDau: TraLoiOffline[];
 }) {
   const [dapAn, setDapAn] = useState<TraLoiOffline[]>(banDau);
-  const [status, setStatus] = useState("Đã đồng bộ");
+  const [status, setStatus] = useState("Đã lưu");
   const [pending, setPending] = useState(0);
   const [conLai, setConLai] = useState(0);
   const [warning, setWarning] = useState("");
@@ -68,7 +68,7 @@ export default function ExamClient({
       setPending(queue.length);
       while (queue.length && navigator.onLine) {
         const op = queue[0]!;
-        setStatus(`Đang đồng bộ · còn ${queue.length}`);
+        setStatus(`Đang lưu · ${queue.length} thay đổi đang chờ`);
         const endpoint = op.type === "autosave" ? "autosave" : "nop-bai";
         const body = op.type === "autosave"
           ? { baiLamId, traLoi: op.answers }
@@ -84,7 +84,7 @@ export default function ExamClient({
             op.attempts += 1;
             op.lastError = `${response.status}: ${await response.text()}`;
             await capNhatOperation(op);
-            setStatus(`Đồng bộ lỗi · còn ${queue.length}`);
+            setStatus(`Chưa lưu được · ${queue.length} thay đổi đang chờ`);
             if (retryable) {
               const delay = Math.min(30_000, 500 * 2 ** Math.min(op.attempts, 6)) + Math.random() * 300;
               window.setTimeout(() => void dongBo(), delay);
@@ -93,7 +93,7 @@ export default function ExamClient({
           }
           await xoaOperation(op.operationId);
           if (op.type === "submit") {
-            location.href = "/ket-qua";
+            location.href = `/ket-qua/${baiLamId}`;
             return;
           }
           queue = await layHangDoi(baiLamId);
@@ -102,12 +102,12 @@ export default function ExamClient({
           op.attempts += 1;
           op.lastError = error instanceof Error ? error.message : "Mất kết nối";
           await capNhatOperation(op);
-          setStatus(`Đã lưu offline · còn ${queue.length}`);
+          setStatus(`Đã lưu trên thiết bị · ${queue.length} thay đổi chờ gửi`);
           return;
         }
       }
       setPending(0);
-      setStatus("Đã đồng bộ");
+      setStatus("Đã lưu");
     } finally {
       syncing.current = false;
     }
@@ -118,7 +118,7 @@ export default function ExamClient({
     await themOperation({ baiLamId, type: "autosave", answers: dapAnRef.current });
     const queue = await layHangDoi(baiLamId);
     setPending(queue.length);
-    setStatus(navigator.onLine ? "Đang đồng bộ" : `Đã lưu offline · còn ${queue.length}`);
+    setStatus(navigator.onLine ? "Đang lưu" : `Đã lưu trên thiết bị · ${queue.length} thay đổi chờ gửi`);
     void dongBo();
   }, [baiLamId, dongBo]);
 
@@ -130,7 +130,7 @@ export default function ExamClient({
     await themOperation({ baiLamId, type: "submit", answers: dapAnRef.current, lyDo });
     const queue = await layHangDoi(baiLamId);
     setPending(queue.length);
-    setStatus(navigator.onLine ? "Đang đồng bộ" : `Đã lưu offline · còn ${queue.length}`);
+    setStatus(navigator.onLine ? "Đang lưu" : `Đã lưu trên thiết bị · ${queue.length} thay đổi chờ gửi`);
     void dongBo();
   }, [baiLamId, dongBo, xepAutosave]);
 
@@ -154,7 +154,7 @@ export default function ExamClient({
       if (local) setDapAn(local);
       submitQueued.current = queue.some((x) => x.type === "submit");
       setPending(queue.length);
-      setStatus(queue.length ? (navigator.onLine ? "Đang đồng bộ" : `Đã lưu offline · còn ${queue.length}`) : "Đã đồng bộ");
+      setStatus(queue.length ? (navigator.onLine ? "Đang lưu" : `Đã lưu trên thiết bị · ${queue.length} thay đổi chờ gửi`) : "Đã lưu");
       setHydrated(true);
       void dongBo();
     });
@@ -204,7 +204,7 @@ export default function ExamClient({
       }
       void dongBo();
     };
-    const offline = () => { offlineAt.current = Date.now(); setStatus(`Đã lưu offline · còn ${pending}`); };
+    const offline = () => { offlineAt.current = Date.now(); setStatus(`Đã lưu trên thiết bị · ${pending} thay đổi chờ gửi`); };
     const visibility = () => {
       if (document.hidden) hiddenAt.current = Date.now();
       else if (hiddenAt.current) {
@@ -227,7 +227,7 @@ export default function ExamClient({
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex items-center gap-3 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Đang khôi phục bài làm…</span>
+          <span>Đang mở lại bài làm của bạn…</span>
         </div>
       </div>
     );
@@ -305,8 +305,8 @@ export default function ExamClient({
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground" data-testid="sync-status">
             <TrangThaiDongBoIcon status={status} />
-            <span>{status}{pending > 0 && !status.includes("còn") ? ` · còn ${pending}` : ""}</span>
-            {status.startsWith("Đồng bộ lỗi") && (
+            <span>{status}{pending > 0 && !status.includes("thay đổi") ? ` · ${pending} thay đổi đang chờ` : ""}</span>
+            {status.startsWith("Chưa lưu được") && (
               <button className="inline-flex items-center gap-1 text-primary underline underline-offset-2" onClick={() => void dongBo()}>
                 <RefreshCw className="h-3.5 w-3.5" /> Thử lại
               </button>
@@ -471,8 +471,8 @@ export default function ExamClient({
 }
 
 function TrangThaiDongBoIcon({ status }: { status: string }) {
-  if (status.startsWith("Đồng bộ lỗi")) return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
-  if (status.startsWith("Đang đồng bộ")) return <Loader2 className="h-3.5 w-3.5 animate-spin" />;
-  if (status.startsWith("Đã lưu offline")) return <CloudOff className="h-3.5 w-3.5 text-amber-600" />;
+  if (status.startsWith("Chưa lưu được")) return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
+  if (status.startsWith("Đang lưu")) return <Loader2 className="h-3.5 w-3.5 animate-spin" />;
+  if (status.startsWith("Đã lưu trên thiết bị")) return <CloudOff className="h-3.5 w-3.5 text-amber-600" />;
   return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />;
 }

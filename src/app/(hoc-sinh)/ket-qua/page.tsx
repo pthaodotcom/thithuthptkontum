@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, BarChart3, BookOpenCheck, FileSearch, Sparkles, TrendingUp, Trophy } from "lucide-react";
 
+import { lamSachNhanXet } from "@/lib/ai/gemini";
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 
@@ -28,19 +29,19 @@ export default async function KetQuaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="flex items-center gap-2 text-sm font-semibold text-accent"><BarChart3 className="h-4 w-4" />Dashboard cá nhân</p>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">Báo cáo năng lực cá nhân</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Kết quả, phân tích chuyên đề và nhận xét cho từng bài thi.</p>
+        <p className="flex items-center gap-2 text-sm font-semibold text-accent"><BarChart3 className="h-4 w-4" />Kết quả của bạn</p>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">Điểm và nhận xét</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Xem điểm, phần kiến thức cần ôn và nhận xét của từng bài thi.</p>
       </div>
 
       {!!scores.length && <>
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{personalMetrics.map((item) => { const Icon = item.icon; return <div key={item.label} className="rounded-2xl border border-border bg-card p-5"><div className="flex items-center justify-between"><p className="text-sm text-muted-foreground">{item.label}</p><Icon className="h-5 w-5 text-primary" /></div><p className="mt-3 text-3xl font-bold tabular-nums">{item.value}</p></div>; })}</section>
-        <section className="rounded-2xl border border-border bg-card p-5"><h2 className="font-bold">Tiến trình qua các lần thi</h2><div className="mt-4 space-y-3">{(data || []).slice(0, 8).map((item) => { const ctm = Array.isArray(item.ca_thi_mon) ? item.ca_thi_mon[0] : item.ca_thi_mon; const mon = Array.isArray(ctm?.mon) ? ctm.mon[0] : ctm?.mon; const ca = Array.isArray(ctm?.ca_thi) ? ctm.ca_thi[0] : ctm?.ca_thi; const dot = Array.isArray(ca?.dot_thi) ? ca.dot_thi[0] : ca?.dot_thi; const score = Number(item.diem_tong); return <div key={item.bai_lam_id}><div className="mb-1.5 flex justify-between gap-3 text-sm"><span className="truncate font-medium">{mon?.ten_mon} · {dot?.ten_dot_thi}</span><span className="tabular-nums text-muted-foreground">{score.toFixed(2)}/10</span></div><div className="h-2.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${mon?.ten_mon}: ${score.toFixed(2)} trên 10`}><div className="h-full rounded-full bg-primary" style={{ width: `${score * 10}%` }} /></div></div>; })}</div></section>
+<section className="rounded-2xl border border-border bg-card p-5"><h2 className="font-bold">Điểm các lần thi gần đây</h2><div className="mt-4 space-y-3">{(data || []).slice(0, 8).map((item) => { const ctm = Array.isArray(item.ca_thi_mon) ? item.ca_thi_mon[0] : item.ca_thi_mon; const mon = Array.isArray(ctm?.mon) ? ctm.mon[0] : ctm?.mon; const ca = Array.isArray(ctm?.ca_thi) ? ctm.ca_thi[0] : ctm?.ca_thi; const dot = Array.isArray(ca?.dot_thi) ? ca.dot_thi[0] : ca?.dot_thi; const score = Number(item.diem_tong); return <div key={item.bai_lam_id}><div className="mb-1.5 flex justify-between gap-3 text-sm"><span className="truncate font-medium">{mon?.ten_mon} · {dot?.ten_dot_thi}</span><span className="tabular-nums text-muted-foreground">{score.toFixed(2)}/10</span></div><div className="h-2.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${mon?.ten_mon}: ${score.toFixed(2)} trên 10`}><div className="h-full rounded-full bg-primary" style={{ width: `${score * 10}%` }} /></div></div>; })}</div></section>
       </>}
 
       {!data?.length && (
         <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          Hoàn thành ít nhất một bài thi để xem báo cáo năng lực.
+          Hoàn thành ít nhất một bài thi để xem điểm và nhận xét.
         </div>
       )}
 
@@ -87,15 +88,14 @@ export default async function KetQuaPage() {
               <div className="mt-4 flex gap-3 rounded-lg border-l-4 border-primary bg-primary/5 p-4 text-sm text-foreground">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <p>
-                  {nx?.noi_dung || "Kết quả đang được phân tích."}
-                  {nx?.nguon === "Fallback" && <span className="ml-2 text-xs text-muted-foreground">(mẫu dự phòng)</span>}
+                  {lamSachNhanXet(nx?.noi_dung || "") || "Kết quả đang được phân tích."}
                 </p>
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-sm text-muted-foreground">
                 <span>Nộp lúc {b.thoi_diem_nop ? new Date(b.thoi_diem_nop).toLocaleString("vi-VN") : "—"}</span>
-                <Link href={`/tra-cuu?baiLamId=${b.bai_lam_id}`} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
-                  <FileSearch className="h-4 w-4" /> Xem dữ liệu đối chiếu <ArrowRight className="h-3.5 w-3.5" />
+                <Link href={`/ket-qua/${b.bai_lam_id}`} className="inline-flex min-h-11 items-center gap-1 font-medium text-primary hover:underline">
+                  <FileSearch className="h-4 w-4" /> Xem kết quả bài thi <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </article>

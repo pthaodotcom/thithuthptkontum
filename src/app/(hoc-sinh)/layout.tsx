@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { BarChart3, CalendarDays, Repeat } from "lucide-react";
+import { BarChart3, CalendarDays, Repeat, TrendingUp } from "lucide-react";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
@@ -11,6 +11,7 @@ const navGroups: DashboardNavGroup[] = [
     items: [
       { href: "/ky-thi", label: "Kỳ thi", icon: CalendarDays },
       { href: "/ket-qua", label: "Kết quả", icon: BarChart3 },
+      { href: "/bao-cao-nang-luc", label: "Báo cáo năng lực", icon: TrendingUp },
       { href: "/ho-so/doi-mon-tu-chon", label: "Đổi môn tự chọn", icon: Repeat },
     ],
   },

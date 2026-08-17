@@ -21,7 +21,7 @@ export default async function KhungChuyenDePage() {
       <div className="mx-auto mt-16 max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-6">
         <h1 className="text-xl font-bold text-amber-900">Chưa được bổ nhiệm Tổ trưởng</h1>
         <p className="mt-2 text-sm text-amber-700">
-          Chỉ Tổ trưởng bộ môn mới được quản lý khung chuyên đề. Vui lòng liên hệ Admin để kiểm tra bổ nhiệm.
+          Chỉ Tổ trưởng bộ môn mới được quản lý khung chuyên đề. Vui lòng liên hệ quản trị viên để kiểm tra thông tin bổ nhiệm.
         </p>
       </div>
     );
@@ -42,7 +42,7 @@ export default async function KhungChuyenDePage() {
         <p className="text-sm font-medium text-blue-600">Môn {mon.ten_mon}</p>
         <h1 className="text-2xl font-bold tracking-tight">Khung Chuyên đề → Bài học</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Cấu trúc này được dùng làm metadata khi soạn câu hỏi và lập ma trận đề.
+          Giáo viên sẽ chọn các chuyên đề và bài học này khi soạn câu hỏi, lập ma trận đề.
         </p>
       </div>
       <KhungChuyenDeClient initialData={(data || []) as never[]} />

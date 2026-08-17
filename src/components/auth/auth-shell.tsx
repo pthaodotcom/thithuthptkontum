@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { GraduationCap, ShieldCheck, Timer, ClipboardCheck } from "lucide-react";
 
 const diemNhan = [
-  { icon: Timer, text: "Đồng hồ thi tự động, không bù giờ" },
-  { icon: ShieldCheck, text: "Giám sát ca thi theo thời gian thực" },
-  { icon: ClipboardCheck, text: "Chấm và tổng hợp kết quả tức thì" },
+  { icon: Timer, text: "Thời gian làm bài được tính tự động" },
+  { icon: ShieldCheck, text: "Ghi nhận khi rời màn hình hoặc mất kết nối" },
+  { icon: ClipboardCheck, text: "Xem điểm sau khi nộp bài" },
 ];
 
 export function AuthShell({
@@ -44,12 +44,12 @@ export function AuthShell({
         </div>
 
         <div className="relative z-10 max-w-md">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-gold">Nền tảng số cho nhà trường</p>
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-gold">Hệ thống của nhà trường</p>
           <h1 className="text-4xl font-bold leading-[1.15] tracking-tight xl:text-[2.7rem]">
-            Nền tảng thi thử trực tuyến cho toàn trường
+            Thi thử trực tuyến cấp trường
           </h1>
           <p className="mt-5 text-[15px] leading-7 text-primary-foreground/70">
-            Quản lý đợt thi, ngân hàng câu hỏi và kết quả học sinh trong một hệ thống thống nhất.
+            Giáo viên tạo đề và xem kết quả; học sinh xem lịch thi và làm bài.
           </p>
 
           <ul className="mt-10 space-y-4">

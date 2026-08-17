@@ -17,7 +17,7 @@ import {
 
 type TaiKhoan = {
   tai_khoan_id: string; ma_so: string; ho_ten: string; vai_tro: "Admin" | "GiaoVien" | "HocSinh";
-  trang_thai: "HoatDong" | "DinhChi"; nam_sinh: number | null; email_phu_huynh: string | null;
+  trang_thai: "HoatDong" | "DinhChi"; nam_sinh: number | null; sdt_zalo_phu_huynh: string | null; email_phu_huynh: string | null;
   lop_id: string | null; mon_id: string | null; mon_tu_chon_1_id: string | null; mon_tu_chon_2_id: string | null;
   phai_doi_mat_khau: boolean; lop: { ten_lop: string } | null; mon: { mon_id: string; ten_mon: string } | null;
 };
@@ -25,13 +25,13 @@ type Lop = { lop_id: string; ten_lop: string; khoi: string };
 type Mon = { mon_id: string; ten_mon: string; loai_mon: string; to_truong_tai_khoan_id: string | null };
 type VaiTroUi = TaiKhoanInput["vai_tro"];
 const vaiTroLabels: Record<VaiTroUi | "TatCa", string> = {
-  TatCa: "Tất cả vai trò", Admin: "Admin", ToTruong: "Tổ trưởng",
+  TatCa: "Tất cả vai trò", Admin: "Quản trị viên", ToTruong: "Tổ trưởng",
   GiaoVien: "Giáo viên", HocSinh: "Học sinh",
 };
 
 const blank = (): TaiKhoanInput => ({
   ma_so: "", ho_ten: "", vai_tro: "HocSinh", nam_sinh: new Date().getFullYear() - 18,
-  lop_id: null, mon_id: null, email_phu_huynh: null, mon_tu_chon_1_id: null, mon_tu_chon_2_id: null,
+  lop_id: null, mon_id: null, sdt_zalo_phu_huynh: null, email_phu_huynh: null, mon_tu_chon_1_id: null, mon_tu_chon_2_id: null,
 });
 
 export default function TaiKhoanClient({ initialData, lopList, monList, initialFilter = "TatCa" }: {
@@ -76,7 +76,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
     setForm({
       ma_so: tk.ma_so, ho_ten: tk.ho_ten, vai_tro: vaiTroUi(tk),
       nam_sinh: tk.nam_sinh || new Date().getFullYear() - 30, lop_id: tk.lop_id, mon_id: tk.mon_id,
-      email_phu_huynh: tk.email_phu_huynh, mon_tu_chon_1_id: tk.mon_tu_chon_1_id,
+      sdt_zalo_phu_huynh: tk.sdt_zalo_phu_huynh, email_phu_huynh: tk.email_phu_huynh, mon_tu_chon_1_id: tk.mon_tu_chon_1_id,
       mon_tu_chon_2_id: tk.mon_tu_chon_2_id,
     });
     setOpen(true);
@@ -99,7 +99,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
     const next = tk.trang_thai === "HoatDong" ? "DinhChi" : "HoatDong";
     let lyDo = "";
     if (next === "DinhChi") {
-      const input = window.prompt(`Nhập lý do đình chỉ tài khoản ${tk.ma_so}:`);
+      const input = window.prompt(`Nhập lý do tạm khóa tài khoản ${tk.ma_so}:`);
       if (input === null) return;
       lyDo = input.trim();
       if (lyDo.length < 3) {
@@ -111,8 +111,8 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
     if (res.success) {
       toast.success(
         res.dangLamBai
-          ? "Đã đình chỉ; học sinh được tiếp tục bài đang làm và bị chặn từ lần đăng nhập sau"
-          : next === "DinhChi" ? "Đã đình chỉ" : "Đã gỡ đình chỉ",
+          ? "Đã tạm khóa tài khoản. Học sinh vẫn có thể hoàn thành bài đang làm, nhưng không thể đăng nhập lại sau khi thoát."
+          : next === "DinhChi" ? "Đã tạm khóa tài khoản" : "Đã mở lại tài khoản",
       );
       refresh();
     }
@@ -120,7 +120,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
   };
 
   const doReset = async (tk: TaiKhoan) => {
-    if (!window.confirm(`Reset mật khẩu của ${tk.ma_so} về mã số + năm sinh?`)) return;
+    if (!window.confirm(`Đặt lại mật khẩu của ${tk.ma_so} thành mã số + năm sinh?`)) return;
     const res = await resetMatKhau(tk.tai_khoan_id);
     if (res.success) toast.success(`Mật khẩu mới: ${res.matKhau}`, { duration: 10000 });
     else toast.error(res.error);
@@ -138,7 +138,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
     try {
       const book = XLSX.read(await file.arrayBuffer());
       const firstSheet = book.SheetNames[0];
-      if (!firstSheet || !book.Sheets[firstSheet]) throw new Error("File không có sheet dữ liệu");
+      if (!firstSheet || !book.Sheets[firstSheet]) throw new Error("File Excel không có trang tính dữ liệu");
       const raw = XLSX.utils.sheet_to_json<Record<string, string | number>>(book.Sheets[firstSheet], { defval: "" });
       const lopByName = new Map(lopList.map(l => [l.ten_lop.toLowerCase(), l.lop_id]));
       const monByName = new Map(monList.map(m => [m.ten_mon.toLowerCase(), m.mon_id]));
@@ -150,6 +150,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
         nam_sinh: Number(r.nam_sinh || r["Năm sinh"]),
         lop_id: lopByName.get(String(r.lop || r["Lớp"] || "").toLowerCase()) || null,
         mon_id: monByName.get(String(r.mon || r["Môn"] || "").toLowerCase()) || null,
+        sdt_zalo_phu_huynh: String(r.sdt_zalo_phu_huynh || r["SĐT phụ huynh"] || "").trim() || null,
         email_phu_huynh: String(r.email_phu_huynh || r["Email phụ huynh"] || "").trim().toLowerCase() || null,
         mon_tu_chon_1_id: monByName.get(String(r.mon_tu_chon_1 || r["Môn tự chọn 1"] || "").toLowerCase()) || null,
         mon_tu_chon_2_id: monByName.get(String(r.mon_tu_chon_2 || r["Môn tự chọn 2"] || "").toLowerCase()) || null,
@@ -157,7 +158,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
       setLoading(true);
       const result = await importTaiKhoan(rows);
       setImportErrors(result.loi);
-      toast.success(`Import thành công ${result.thanhCong}/${rows.length} dòng`);
+      toast.success(`Đã nhập ${result.thanhCong}/${rows.length} dòng từ file Excel`);
       refresh();
     } catch {
       toast.error("Không đọc được file Excel");
@@ -170,13 +171,13 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
     const book = XLSX.utils.book_new();
     const headers = [
       "ma_so", "ho_ten", "vai_tro", "nam_sinh", "lop", "mon",
-      "email_phu_huynh", "mon_tu_chon_1", "mon_tu_chon_2",
+        "sdt_zalo_phu_huynh", "email_phu_huynh", "mon_tu_chon_1", "mon_tu_chon_2",
     ];
     const example = {
       ma_so: "HS0001", ho_ten: "Nguyễn Văn Mẫu", vai_tro: "HocSinh",
       nam_sinh: new Date().getFullYear() - 18,
       lop: lopList[0]?.ten_lop || "12A1", mon: "",
-      email_phu_huynh: "phuhuynh@example.com",
+        sdt_zalo_phu_huynh: "0912345678", email_phu_huynh: "phuhuynh@example.com",
       mon_tu_chon_1: monTuChon[0]?.ten_mon || "",
       mon_tu_chon_2: monTuChon[1]?.ten_mon || "",
     };
@@ -185,7 +186,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
     XLSX.utils.book_append_sheet(book, dataSheet, "TaiKhoan");
     XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([
       ["Vai trò", "Cột cần nhập"],
-      ["HocSinh", "ma_so, ho_ten, vai_tro, nam_sinh, lop, mon_tu_chon_1, mon_tu_chon_2; email_phu_huynh không bắt buộc"],
+        ["HocSinh", "ma_so, ho_ten, vai_tro, nam_sinh, lop, mon_tu_chon_1, mon_tu_chon_2; SĐT và email phụ huynh không bắt buộc"],
       ["GiaoVien", "ma_so, ho_ten, vai_tro, nam_sinh, mon"],
       ["ToTruong", "Như GiaoVien; hệ thống bổ nhiệm tổ trưởng cho môn đã chọn"],
       ["Admin", "ma_so, ho_ten, vai_tro, nam_sinh"],
@@ -199,7 +200,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
       <div className="flex flex-wrap justify-end gap-2">
         <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
         <Button type="button" variant="ghost" disabled={loading} onClick={downloadTemplate}><Download className="mr-2 h-4 w-4" />Tải file mẫu</Button>
-        <Button variant="outline" disabled={loading} onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import Excel</Button>
+        <Button variant="outline" disabled={loading} onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Nhập từ Excel</Button>
         <Button onClick={() => { setForm({ ...blank(), vai_tro: initialFilter === "GiaoVien" ? "GiaoVien" : "HocSinh" }); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Thêm {initialFilter === "GiaoVien" ? "giáo viên" : initialFilter === "HocSinh" ? "học sinh" : "tài khoản"}</Button>
       </div>
       <div className="flex flex-wrap gap-3 rounded-xl border border-border bg-card p-4">
@@ -208,7 +209,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
           <SelectTrigger className="w-44"><SelectValue>{vaiTroLabels[filter as VaiTroUi | "TatCa"]}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="TatCa">Tất cả vai trò</SelectItem>
-            <SelectItem value="Admin">Admin</SelectItem><SelectItem value="ToTruong">Tổ trưởng</SelectItem>
+                <SelectItem value="Admin">Quản trị viên</SelectItem><SelectItem value="ToTruong">Tổ trưởng</SelectItem>
             <SelectItem value="GiaoVien">Giáo viên</SelectItem><SelectItem value="HocSinh">Học sinh</SelectItem>
           </SelectContent>
         </Select>
@@ -229,7 +230,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
       {importErrors.length > 0 && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950">
           <p className="font-semibold text-amber-900 dark:text-amber-200">Các dòng bị bỏ qua</p>
-          {importErrors.map(e => <p key={`${e.dong}-${e.maLoi}`} className="text-amber-800 dark:text-amber-300">Dòng {e.dong} · {e.maLoi}: {e.chiTiet}</p>)}
+          {importErrors.map(e => <p key={`${e.dong}-${e.maLoi}`} className="text-amber-800 dark:text-amber-300">Dòng {e.dong}: {e.chiTiet}</p>)}
         </div>
       )}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -242,13 +243,13 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
             {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Không có tài khoản phù hợp.</TableCell></TableRow>
               : filtered.map(tk => <TableRow key={tk.tai_khoan_id}>
                 <TableCell className="font-mono font-medium">{tk.ma_so}</TableCell><TableCell>{tk.ho_ten}</TableCell>
-                <TableCell>{({ Admin: "Admin", ToTruong: "Tổ trưởng", GiaoVien: "Giáo viên", HocSinh: "Học sinh" } as const)[vaiTroUi(tk)]}</TableCell>
+                <TableCell>{({ Admin: "Quản trị viên", ToTruong: "Tổ trưởng", GiaoVien: "Giáo viên", HocSinh: "Học sinh" } as const)[vaiTroUi(tk)]}</TableCell>
                 <TableCell>{tk.lop?.ten_lop || tk.mon?.ten_mon || "—"}</TableCell>
-                <TableCell><button onClick={() => toggle(tk)} className={`rounded px-2 py-1 text-xs font-medium ${tk.trang_thai === "HoatDong" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>{tk.trang_thai === "HoatDong" ? "Hoạt động" : "Đình chỉ"}</button></TableCell>
+                <TableCell><button onClick={() => toggle(tk)} className={`rounded px-2 py-1 text-xs font-medium ${tk.trang_thai === "HoatDong" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>{tk.trang_thai === "HoatDong" ? "Đang dùng" : "Tạm khóa"}</button></TableCell>
                 <TableCell className="space-x-1 text-right">
                   <Button size="icon" className="h-8 w-8" variant="outline" title="Xem" onClick={() => setViewing(tk)}><Eye className="h-3.5 w-3.5" /></Button>
                   <Button size="icon" className="h-8 w-8" variant="outline" title="Sửa" onClick={() => edit(tk)}><Pencil className="h-3.5 w-3.5" /></Button>
-                  <Button size="icon" className="h-8 w-8" variant="outline" title="Reset mật khẩu" onClick={() => doReset(tk)}><RotateCcw className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" className="h-8 w-8" variant="outline" title="Đặt lại mật khẩu" onClick={() => doReset(tk)}><RotateCcw className="h-3.5 w-3.5" /></Button>
                   <Button size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" variant="outline" title="Xóa" onClick={() => remove(tk)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </TableCell>
               </TableRow>)}
@@ -263,7 +264,7 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
             <div><p className="text-muted-foreground">Vai trò</p><p className="font-medium">{vaiTroLabels[vaiTroUi(viewing)]}</p></div>
             <div><p className="text-muted-foreground">Lớp / Môn</p><p className="font-medium">{viewing.lop?.ten_lop || viewing.mon?.ten_mon || "—"}</p></div>
             <div><p className="text-muted-foreground">Năm sinh</p><p className="font-medium">{viewing.nam_sinh || "—"}</p></div>
-            <div><p className="text-muted-foreground">Trạng thái</p><p className="font-medium">{viewing.trang_thai === "HoatDong" ? "Hoạt động" : "Đình chỉ"}</p></div>
+            <div><p className="text-muted-foreground">Trạng thái</p><p className="font-medium">{viewing.trang_thai === "HoatDong" ? "Đang dùng" : "Tạm khóa"}</p></div>
           </div>}
         </DialogContent>
       </Dialog>
@@ -277,16 +278,17 @@ export default function TaiKhoanClient({ initialData, lopList, monList, initialF
             <div className="space-y-2.5"><Label className="text-base font-semibold">Mã số</Label><Input className="h-12 px-4 text-base md:text-base" required minLength={4} maxLength={20} value={form.ma_so} onChange={e => setForm({ ...form, ma_so: e.target.value })} /></div>
             <div className="space-y-2.5"><Label className="text-base font-semibold">Họ tên</Label><Input className="h-12 px-4 text-base md:text-base" required maxLength={100} value={form.ho_ten} onChange={e => setForm({ ...form, ho_ten: e.target.value })} /></div>
             <div className="space-y-2.5"><Label className="text-base font-semibold">Vai trò</Label><Select value={form.vai_tro} onValueChange={v => v && setForm({ ...form, vai_tro: v as VaiTroUi })}><SelectTrigger className="h-12 w-full px-4 text-base"><SelectValue>{vaiTroLabels[form.vai_tro]}</SelectValue></SelectTrigger><SelectContent>
-              <SelectItem value="Admin">Admin</SelectItem><SelectItem value="ToTruong">Tổ trưởng</SelectItem><SelectItem value="GiaoVien">Giáo viên</SelectItem><SelectItem value="HocSinh">Học sinh</SelectItem>
+              <SelectItem value="Admin">Quản trị viên</SelectItem><SelectItem value="ToTruong">Tổ trưởng</SelectItem><SelectItem value="GiaoVien">Giáo viên</SelectItem><SelectItem value="HocSinh">Học sinh</SelectItem>
             </SelectContent></Select></div>
             <div className="space-y-2.5"><Label className="text-base font-semibold">Năm sinh</Label><Input className="h-12 px-4 text-base md:text-base" required type="number" min={1900} max={new Date().getFullYear()} value={form.nam_sinh} onChange={e => setForm({ ...form, nam_sinh: Number(e.target.value) })} /></div>
             {form.vai_tro === "HocSinh" && <>
               <div className="space-y-2.5"><Label className="text-base font-semibold">Lớp</Label><Select value={form.lop_id || ""} onValueChange={v => setForm({ ...form, lop_id: v })}><SelectTrigger className="h-12 w-full px-4 text-base"><SelectValue placeholder="Chọn lớp">{lopList.find(l => l.lop_id === form.lop_id)?.ten_lop}</SelectValue></SelectTrigger><SelectContent>{lopList.map(l => <SelectItem key={l.lop_id} value={l.lop_id}>{l.ten_lop}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2.5"><Label className="text-base font-semibold">Email phụ huynh</Label><Input className="h-12 px-4 text-base md:text-base" type="email" placeholder="phuhuynh@example.com" value={form.email_phu_huynh || ""} onChange={e => setForm({ ...form, email_phu_huynh: e.target.value || null })} /><p className="text-sm leading-5 text-muted-foreground">Không bắt buộc; thiếu email sẽ được ghi nhận và không tính là lỗi gửi.</p></div>
+              <div className="space-y-2.5"><Label className="text-base font-semibold">SĐT Zalo phụ huynh</Label><Input className="h-12 px-4 text-base md:text-base" type="tel" inputMode="tel" placeholder="0912345678" value={form.sdt_zalo_phu_huynh || ""} onChange={e => setForm({ ...form, sdt_zalo_phu_huynh: e.target.value || null })} /><p className="text-sm leading-5 text-muted-foreground">Chỉ quản trị viên được cập nhật thông tin này.</p></div>
+              <div className="space-y-2.5"><Label className="text-base font-semibold">Email phụ huynh</Label><Input className="h-12 px-4 text-base md:text-base" type="email" placeholder="phuhuynh@example.com" value={form.email_phu_huynh || ""} onChange={e => setForm({ ...form, email_phu_huynh: e.target.value || null })} /><p className="text-sm leading-5 text-muted-foreground">Chỉ quản trị viên được cập nhật. Nếu để trống, phụ huynh sẽ chưa nhận được báo cáo qua Gmail.</p></div>
               {[1, 2].map(pos => { const selectedId = pos === 1 ? form.mon_tu_chon_1_id : form.mon_tu_chon_2_id; return <div key={pos} className="space-y-2.5"><Label className="text-base font-semibold">Môn tự chọn {pos}</Label><Select required value={selectedId || ""} onValueChange={v => setForm({ ...form, [pos === 1 ? "mon_tu_chon_1_id" : "mon_tu_chon_2_id"]: v })}><SelectTrigger className="h-12 w-full px-4 text-base"><SelectValue placeholder="Chọn môn">{monTuChon.find(m => m.mon_id === selectedId)?.ten_mon}</SelectValue></SelectTrigger><SelectContent>{monTuChon.map(m => <SelectItem key={m.mon_id} value={m.mon_id}>{m.ten_mon}</SelectItem>)}</SelectContent></Select></div>; })}
             </>}
             {(form.vai_tro === "GiaoVien" || form.vai_tro === "ToTruong") && <div className="space-y-2.5 sm:col-span-2"><Label className="text-base font-semibold">Môn phụ trách</Label><Select value={form.mon_id || ""} onValueChange={v => setForm({ ...form, mon_id: v })}><SelectTrigger className="h-12 w-full px-4 text-base"><SelectValue placeholder="Chọn môn">{monList.find(m => m.mon_id === form.mon_id)?.ten_mon}</SelectValue></SelectTrigger><SelectContent>{monList.map(m => <SelectItem key={m.mon_id} value={m.mon_id}>{m.ten_mon}</SelectItem>)}</SelectContent></Select></div>}
-            <p className="rounded-lg bg-muted/60 p-4 text-sm leading-6 text-muted-foreground sm:col-span-2">Mật khẩu mặc định = mã số + năm sinh và hết hiệu lực sau 15 ngày nếu chưa đăng nhập.</p>
+            <p className="rounded-lg bg-muted/60 p-4 text-sm leading-6 text-muted-foreground sm:col-span-2">Mật khẩu ban đầu là mã số + năm sinh. Người dùng cần đăng nhập trong 15 ngày và đổi sang mật khẩu mới.</p>
             <div className="flex justify-end gap-3 border-t pt-5 sm:col-span-2"><Button className="h-11 px-6 text-base" type="button" variant="outline" onClick={close}>Hủy</Button><Button className="h-11 px-6 text-base" disabled={loading} type="submit">{loading ? "Đang lưu..." : "Lưu tài khoản"}</Button></div>
           </form>
         </DialogContent>

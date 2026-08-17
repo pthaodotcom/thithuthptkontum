@@ -14,6 +14,8 @@ const inputSchema = z.object({
   nam_sinh: z.number().int().min(1900).max(new Date().getFullYear()),
   lop_id: z.string().uuid().nullable().optional(),
   mon_id: z.string().uuid().nullable().optional(),
+  sdt_zalo_phu_huynh: z.string().trim().max(20, "Số điện thoại tối đa 20 ký tự").nullable().optional().or(z.literal(""))
+    .refine((value) => !value || /^\+?[0-9]{9,15}$/.test(value.replace(/[\s.-]/g, "")), "Số điện thoại phụ huynh phải có từ 9 đến 15 chữ số"),
   email_phu_huynh: z.string().trim().toLowerCase().email("Email phụ huynh không hợp lệ").nullable().optional().or(z.literal("")),
   mon_tu_chon_1_id: z.string().uuid().nullable().optional(),
   mon_tu_chon_2_id: z.string().uuid().nullable().optional(),
@@ -54,6 +56,7 @@ function payloadTaiKhoan(input: TaiKhoanInput, matKhauHash?: string) {
     vai_tro: input.vai_tro === "HocSinh" ? "HocSinh" : input.vai_tro === "Admin" ? "Admin" : "GiaoVien",
     nam_sinh: input.nam_sinh,
     lop_id: laHocSinh ? input.lop_id || null : null,
+    sdt_zalo_phu_huynh: laHocSinh ? input.sdt_zalo_phu_huynh?.replace(/[\s.-]/g, "") || null : null,
     email_phu_huynh: laHocSinh ? input.email_phu_huynh?.trim().toLowerCase() || null : null,
     mon_tu_chon_1_id: laHocSinh ? input.mon_tu_chon_1_id || null : null,
     mon_tu_chon_2_id: laHocSinh ? input.mon_tu_chon_2_id || null : null,
@@ -75,7 +78,7 @@ async function capNhatBoNhiem(
   await supabase.from("mon").update({ to_truong_tai_khoan_id: null }).eq("to_truong_tai_khoan_id", taiKhoanId);
   if (vaiTro === "ToTruong" && monId) {
     const { error } = await supabase.from("mon").update({ to_truong_tai_khoan_id: taiKhoanId }).eq("mon_id", monId);
-    if (error) throw new Error(error.message);
+    if (error) throw new Error("Chưa cập nhật được vai trò Tổ trưởng. Vui lòng thử lại.");
   }
 }
 
@@ -90,7 +93,7 @@ export async function taoTaiKhoan(input: TaiKhoanInput) {
     .insert(payloadTaiKhoan(parsed.data, await bamMatKhau(matKhau)))
     .select("tai_khoan_id")
     .single();
-  if (error) return { success: false, error: error.code === "23505" ? "Mã số đã tồn tại" : error.message };
+  if (error) return { success: false, error: error.code === "23505" ? "Mã số đã tồn tại." : "Chưa tạo được tài khoản. Vui lòng kiểm tra thông tin và thử lại." };
   try {
     await capNhatBoNhiem(data.tai_khoan_id, parsed.data.vai_tro, parsed.data.mon_id);
   } catch (error) {
@@ -106,7 +109,7 @@ export async function capNhatTaiKhoan(taiKhoanId: string, input: TaiKhoanInput) 
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message };
   const supabase = taoSupabaseServiceRole();
   const { error } = await supabase.from("tai_khoan").update(payloadTaiKhoan(parsed.data)).eq("tai_khoan_id", taiKhoanId);
-  if (error) return { success: false, error: error.code === "23505" ? "Mã số đã tồn tại" : error.message };
+  if (error) return { success: false, error: error.code === "23505" ? "Mã số đã tồn tại." : "Chưa cập nhật được tài khoản. Vui lòng thử lại." };
   try {
     await capNhatBoNhiem(taiKhoanId, parsed.data.vai_tro, parsed.data.mon_id);
   } catch (error) {
@@ -138,8 +141,8 @@ export async function doiTrangThaiTaiKhoan(
   if (error) {
     const messages: Record<string, string> = {
       LY_DO_LA_BAT_BUOC: "Lý do là bắt buộc",
-      KHONG_THE_DINH_CHI_ADMIN: "Không thể đình chỉ tài khoản Admin",
-      TRANG_THAI_DA_THAY_DOI: "Trạng thái tài khoản đã thay đổi",
+      KHONG_THE_DINH_CHI_ADMIN: "Không thể tạm khóa tài khoản quản trị viên",
+      TRANG_THAI_DA_THAY_DOI: "Tài khoản vừa được cập nhật. Vui lòng tải lại danh sách rồi thử lại.",
       KHONG_TIM_THAY_TAI_KHOAN: "Không tìm thấy tài khoản",
     };
     const code = Object.keys(messages).find((item) => error.message.includes(item));
@@ -161,7 +164,7 @@ export async function resetMatKhau(taiKhoanId: string) {
   await damBaoAdmin();
   const supabase = taoSupabaseServiceRole();
   const { data, error } = await supabase.from("tai_khoan").select("ma_so, nam_sinh").eq("tai_khoan_id", taiKhoanId).single();
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "Không tìm thấy tài khoản cần đặt lại mật khẩu." };
   if (!data.nam_sinh) return { success: false, error: "Tài khoản chưa có năm sinh để tạo mật khẩu mặc định" };
   const matKhau = taoMatKhauMacDinh(data.ma_so, data.nam_sinh);
   const { error: updateError } = await supabase.from("tai_khoan").update({
@@ -172,7 +175,7 @@ export async function resetMatKhau(taiKhoanId: string) {
     khoa_dang_nhap_den: null,
     phien_hien_hanh: null,
   }).eq("tai_khoan_id", taiKhoanId);
-  if (updateError) return { success: false, error: updateError.message };
+  if (updateError) return { success: false, error: "Chưa đặt lại được mật khẩu. Vui lòng thử lại." };
   revalidatePath("/tai-khoan");
   return { success: true, matKhau };
 }
@@ -181,9 +184,9 @@ export async function xoaTaiKhoan(taiKhoanId: string) {
   await damBaoAdmin();
   const supabase = taoSupabaseServiceRole();
   const { data } = await supabase.from("tai_khoan").select("vai_tro").eq("tai_khoan_id", taiKhoanId).single();
-  if (data?.vai_tro === "Admin") return { success: false, error: "Không thể xóa tài khoản Admin" };
+  if (data?.vai_tro === "Admin") return { success: false, error: "Không thể xóa tài khoản quản trị viên" };
   const { error } = await supabase.from("tai_khoan").delete().eq("tai_khoan_id", taiKhoanId);
-  if (error) return { success: false, error: error.code === "23503" ? "Tài khoản đã có lịch sử; hãy đình chỉ thay vì xóa." : error.message };
+  if (error) return { success: false, error: error.code === "23503" ? "Tài khoản đã có kết quả hoặc hoạt động trước đây. Hãy tạm khóa thay vì xóa." : "Chưa thể xóa tài khoản. Vui lòng thử lại." };
   revalidatePath("/tai-khoan");
   return { success: true };
 }

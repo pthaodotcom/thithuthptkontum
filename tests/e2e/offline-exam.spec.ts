@@ -74,7 +74,7 @@ test.describe("M4 offline exam", () => {
     await context.setOffline(true);
     await firstAnswer.check();
     await expect(page.getByTestId("sync-status"))
-      .toContainText(/Đã lưu offline|còn 1/, { timeout: 5_000 });
+      .toContainText(/Đã lưu trên thiết bị|1 thay đổi/, { timeout: 5_000 });
 
     // Keep application API traffic disconnected while allowing the browser to
     // fetch the document shell for a deterministic reload in every Playwright
@@ -101,7 +101,7 @@ test.describe("M4 offline exam", () => {
     });
     await page.getByRole("button", { name: /xác nhận nộp bài/i }).click();
     await expect(page.getByTestId("sync-status"))
-      .toContainText(/Đã lưu offline|còn/, { timeout: 5_000 });
+      .toContainText(/Đã lưu trên thiết bị|thay đổi/, { timeout: 5_000 });
 
     await page.unroute("**/api/bai-thi/**");
     await page.evaluate(() => localStorage.removeItem("m4-force-offline"));

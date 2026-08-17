@@ -10,11 +10,18 @@ export default async function ToTruongLayout({ children }: { children: ReactNode
   const session = await laySessionHienHanh();
   if (!session || session.vai_tro !== "GiaoVien") redirect("/dang-nhap");
   const supabase = taoSupabaseServiceRole();
-  const { data: mon } = await supabase
-    .from("mon")
-    .select("ten_mon")
-    .eq("to_truong_tai_khoan_id", session.sub)
-    .maybeSingle();
+  const [{ data: mon }, { data: taiKhoan }] = await Promise.all([
+    supabase
+      .from("mon")
+      .select("ten_mon")
+      .eq("to_truong_tai_khoan_id", session.sub)
+      .maybeSingle(),
+    supabase
+      .from("tai_khoan")
+      .select("ho_ten")
+      .eq("tai_khoan_id", session.sub)
+      .maybeSingle(),
+  ]);
   if (!mon) redirect("/soan-cau-hoi");
 
   const navGroups: DashboardNavGroup[] = [
@@ -35,7 +42,7 @@ export default async function ToTruongLayout({ children }: { children: ReactNode
       brandSub={`Môn ${mon.ten_mon}`}
       navGroups={navGroups}
       userId={session.sub}
-      userName="Tổ trưởng"
+      userName={taiKhoan?.ho_ten ?? "Tổ trưởng"}
       userRole={`Môn ${mon.ten_mon}`}
     >
       {children}

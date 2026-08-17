@@ -56,7 +56,7 @@ export default function KhungChuyenDeClient({ initialData }: { initialData: Chuy
   });
   const toggleChuyenDe = async (item: ChuyenDe) => {
     const next = item.trang_thai === "DangDung" ? "VoHieuHoa" : "DangDung";
-    if (next === "VoHieuHoa" && !confirm("Vô hiệu hóa chuyên đề sẽ vô hiệu hóa toàn bộ bài học bên trong. Tiếp tục?")) return;
+    if (next === "VoHieuHoa" && !confirm("Ngừng sử dụng chuyên đề này cũng sẽ ngừng sử dụng tất cả bài học bên trong. Tiếp tục?")) return;
     const result = await doiTrangThaiChuyenDe(item.chuyen_de_id, next);
     if (result.success) { toast.success("Đã đổi trạng thái"); refresh(); } else toast.error(result.error);
   };
@@ -100,7 +100,7 @@ export default function KhungChuyenDeClient({ initialData }: { initialData: Chuy
               </div>
               <p className="text-xs text-slate-500">{chuyenDe.bai_hoc.length} bài học · {questionCount} câu hỏi</p>
             </div>
-            <button onClick={() => toggleChuyenDe(chuyenDe)} className={`rounded px-2 py-1 text-xs font-medium ${chuyenDe.trang_thai === "DangDung" ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>{chuyenDe.trang_thai === "DangDung" ? "Đang dùng" : "Vô hiệu hóa"}</button>
+            <button onClick={() => toggleChuyenDe(chuyenDe)} className={`rounded px-2 py-1 text-xs font-medium ${chuyenDe.trang_thai === "DangDung" ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>{chuyenDe.trang_thai === "DangDung" ? "Đang dùng" : "Đã ngừng dùng"}</button>
             <Button size="sm" variant="outline" onClick={() => setEditor({ loai: "chuyen-de", id: chuyenDe.chuyen_de_id, ten: chuyenDe.ten_chuyen_de, ma: chuyenDe.ma_chuyen_de })}><Pencil className="h-3.5 w-3.5" /></Button>
             <Button size="sm" variant="outline" onClick={() => removeChuyenDe(chuyenDe)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
           </div>
@@ -110,7 +110,7 @@ export default function KhungChuyenDeClient({ initialData }: { initialData: Chuy
               <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-slate-600">{baiHoc.ma_bai_hoc}</span>
               <span className="flex-1 truncate text-sm font-medium">{baiHoc.ten_bai_hoc}</span>
               <span className="text-xs text-slate-400">{baiHoc.cau_hoi[0]?.count || 0} câu hỏi</span>
-              <button disabled={chuyenDe.trang_thai === "VoHieuHoa"} onClick={() => toggleBaiHoc(baiHoc)} className={`rounded px-2 py-1 text-xs ${baiHoc.trang_thai === "DangDung" ? "bg-green-50 text-green-700" : "bg-slate-200 text-slate-600"}`}>{baiHoc.trang_thai === "DangDung" ? "Đang dùng" : "Vô hiệu hóa"}</button>
+              <button disabled={chuyenDe.trang_thai === "VoHieuHoa"} onClick={() => toggleBaiHoc(baiHoc)} className={`rounded px-2 py-1 text-xs ${baiHoc.trang_thai === "DangDung" ? "bg-green-50 text-green-700" : "bg-slate-200 text-slate-600"}`}>{baiHoc.trang_thai === "DangDung" ? "Đang dùng" : "Đã ngừng dùng"}</button>
               <Button size="sm" variant="outline" onClick={() => setEditor({ loai: "bai-hoc", id: baiHoc.bai_hoc_id, parentId: chuyenDe.chuyen_de_id, ten: baiHoc.ten_bai_hoc, ma: baiHoc.ma_bai_hoc })}><Pencil className="h-3.5 w-3.5" /></Button>
               <Button size="sm" variant="outline" onClick={() => removeBaiHoc(baiHoc)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
             </div>)}
@@ -124,7 +124,7 @@ export default function KhungChuyenDeClient({ initialData }: { initialData: Chuy
             <div className="space-y-2">
               <Label>Mã {editor.loai === "chuyen-de" ? "chuyên đề" : "bài học"}</Label>
               <Input autoFocus required maxLength={20} pattern="[A-Za-z0-9_-]+" title="Chỉ gồm chữ, số, gạch ngang, gạch dưới" placeholder={editor.loai === "chuyen-de" ? "VD: CD1" : "VD: B1"} value={editor.ma} onChange={e => setEditor({ ...editor, ma: e.target.value })} />
-              <p className="text-xs text-slate-400">Dùng để đối chiếu nhanh khi import câu hỏi từ Excel — không dấu, không khoảng trắng.</p>
+              <p className="text-xs text-slate-400">Mã này dùng trong file Excel. Chỉ nhập chữ không dấu, số, gạch ngang hoặc gạch dưới; không dùng khoảng trắng.</p>
             </div>
             <div className="space-y-2"><Label>Tên {editor.loai === "chuyen-de" ? "chuyên đề" : "bài học"}</Label><Input required maxLength={150} value={editor.ten} onChange={e => setEditor({ ...editor, ten: e.target.value })} /></div>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEditor(null)}>Hủy</Button><Button type="submit" disabled={loading}>{loading ? "Đang lưu..." : "Lưu"}</Button></div>

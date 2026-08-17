@@ -116,7 +116,7 @@ export default function RichContentEditor({
         </div>
       )}
       <div className="border-t bg-slate-50 px-4 py-2 text-xs text-slate-500">
-        Hỗ trợ định dạng HTML an toàn, LaTeX, bảng, liên kết và ảnh tối đa 2 MB.
+        Có thể định dạng chữ, công thức toán, bảng, liên kết và ảnh tối đa 2 MB.
       </div>
     </div>
   );

@@ -32,16 +32,16 @@ export function validateBaremMon(cauHinh: CauHinhBaremMon): KetQuaValidateBarem 
   const loi: string[] = [];
 
   const phan1Dong = (cauHinh.phan1SoCau == null) === (cauHinh.phan1DiemMoiCau == null);
-  if (!phan1Dong) loi.push("Phan I: so_cau va diem_moi_cau phai cung co hoac cung khong co");
+  if (!phan1Dong) loi.push("Phần I: nhập cả số câu và điểm mỗi câu, hoặc để trống cả hai.");
 
   const phan3Dong = (cauHinh.phan3SoCau == null) === (cauHinh.phan3DiemMoiCau == null);
-  if (!phan3Dong) loi.push("Phan III: so_cau va diem_moi_cau phai cung co hoac cung khong co");
+  if (!phan3Dong) loi.push("Phần III: nhập cả số câu và điểm mỗi câu, hoặc để trống cả hai.");
 
   const phan2CotDiem = [cauHinh.phan2Diem1Y, cauHinh.phan2Diem2Y, cauHinh.phan2Diem3Y, cauHinh.phan2Diem4Y];
   const phan2DongBo =
     (cauHinh.phan2SoCau == null && phan2CotDiem.every((c) => c == null)) ||
     (cauHinh.phan2SoCau != null && phan2CotDiem.every((c) => c != null));
-  if (!phan2DongBo) loi.push("Phan II: so_cau va ca 4 muc diem phai cung co hoac cung khong co");
+  if (!phan2DongBo) loi.push("Phần II: nhập đủ số câu và bốn mức điểm, hoặc để trống tất cả.");
 
   if (
     cauHinh.phan2SoCau != null &&
@@ -54,7 +54,7 @@ export function validateBaremMon(cauHinh: CauHinhBaremMon): KetQuaValidateBarem 
       cauHinh.phan2Diem1Y < cauHinh.phan2Diem2Y &&
       cauHinh.phan2Diem2Y < cauHinh.phan2Diem3Y &&
       cauHinh.phan2Diem3Y < cauHinh.phan2Diem4Y;
-    if (!tangDan) loi.push("Phan II: thang diem luy tien phai tang dan (dung 1y < 2y < 3y < 4y)");
+    if (!tangDan) loi.push("Phần II: điểm phải tăng dần theo số ý đúng (1 ý < 2 ý < 3 ý < 4 ý).");
   }
 
   const tongDiem =
@@ -64,7 +64,7 @@ export function validateBaremMon(cauHinh: CauHinhBaremMon): KetQuaValidateBarem 
 
   // So sanh voi sai so nho de tranh loi lam tron floating point
   if (Math.abs(tongDiem - 10) > 0.001) {
-    loi.push(`Tong diem toi da phai bang 10, hien dang la ${tongDiem.toFixed(2)}`);
+    loi.push(`Tổng điểm tối đa phải bằng 10; hiện tại là ${tongDiem.toFixed(2)} điểm.`);
   }
 
   return { hopLe: loi.length === 0, loi, tongDiem };

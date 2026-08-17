@@ -11,11 +11,14 @@ import {
   BarChart3,
   Mail,
   CalendarDays,
+  DoorOpen,
   ShieldAlert,
   UserRoundSearch,
 } from "lucide-react";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
+import { taoSupabaseServiceRole } from "@/lib/supabase/server";
+import { demoBypassDangBat } from "@/lib/demo/bypass";
 import { DashboardShell, type DashboardNavGroup } from "@/components/dashboard/dashboard-shell";
 
 const navGroups: DashboardNavGroup[] = [
@@ -45,16 +48,22 @@ const navGroups: DashboardNavGroup[] = [
   },
   {
     label: "Hệ thống",
-    items: [{ href: "/audit-log", label: "Nhật ký kiểm toán", icon: ScrollText }],
+      items: [{ href: "/audit-log", label: "Lịch sử thay đổi", icon: ScrollText }],
   },
   {
     label: "Kết quả",
     items: [
       { href: "/bao-cao", label: "Báo cáo", icon: BarChart3 },
-      { href: "/bao-cao-hoc-sinh", label: "Nhật ký báo cáo", icon: UserRoundSearch },
-      { href: "/thong-bao-email", label: "Nhật ký email", icon: Mail },
+      { href: "/bao-cao-hoc-sinh", label: "Báo cáo học sinh", icon: UserRoundSearch },
+      { href: "/thong-bao-email", label: "Email kết quả", icon: Mail },
     ],
   },
+  ...(demoBypassDangBat()
+    ? [{
+        label: "Công cụ demo",
+        items: [{ href: "/mo-thi-ngay", label: "Thiết lập lịch demo", icon: DoorOpen }],
+      }]
+    : []),
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -62,14 +71,20 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!session || session.vai_tro !== "Admin") {
     redirect("/dang-nhap");
   }
+  const supabase = taoSupabaseServiceRole();
+  const { data: taiKhoan } = await supabase
+    .from("tai_khoan")
+    .select("ho_ten")
+    .eq("tai_khoan_id", session.sub)
+    .maybeSingle();
 
   return (
     <DashboardShell
       brandLabel="Thi thử THPT"
-      brandSub="Admin Panel"
+      brandSub="Quản trị viên"
       navGroups={navGroups}
       userId={session.sub}
-      userName="Admin"
+      userName={taiKhoan?.ho_ten ?? "Quản trị viên"}
       userRole="Quản trị viên"
     >
       {children}

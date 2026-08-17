@@ -26,7 +26,7 @@ async function xuLy(input: z.input<typeof schema>, rpc: "duyet_cau_hoi_moi" | "x
       ? { p_cau_hoi_id: data.id, p_nguoi_duyet_id: session.sub, p_quyet_dinh: data.quyetDinh, p_ly_do: data.lyDo || null }
       : { p_yc_id: data.id, p_nguoi_duyet_id: session.sub, p_quyet_dinh: data.quyetDinh, p_ly_do: data.lyDo || null };
     const { error } = await supabase.rpc(rpc, args);
-    if (error) throw new Error(error.message.replaceAll("_", " "));
+    if (error) throw new Error("Chưa lưu được quyết định. Vui lòng tải lại trang và thử lại.");
 
     // Không phụ thuộc hoàn toàn vào database trigger: một số môi trường cũ có bảng
     // thông báo nhưng chưa cài trigger 0025. Tạo bù theo cách idempotent để giáo
@@ -56,7 +56,7 @@ async function xuLy(input: z.input<typeof schema>, rpc: "duyet_cau_hoi_moi" | "x
             duong_dan: `/soan-cau-hoi?chinhSua=${cauHoi.cau_hoi_id}`,
             doi_tuong_id: cauHoi.cau_hoi_id,
           });
-          if (notificationError) throw new Error(`Không thể gửi thông báo cho giáo viên: ${notificationError.message}`);
+          if (notificationError) throw new Error("Đã lưu quyết định nhưng chưa gửi được thông báo cho giáo viên. Vui lòng thử lại.");
         }
       }
     }

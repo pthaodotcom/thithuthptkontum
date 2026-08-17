@@ -11,7 +11,7 @@ export default async function TaiKhoanPage({ searchParams }: { searchParams: Pro
   const [taiKhoanResult, lopResult, monResult, phanCongResult] = await Promise.all([
     supabase
       .from("tai_khoan")
-      .select("tai_khoan_id, ma_so, ho_ten, vai_tro, trang_thai, nam_sinh, email_phu_huynh, lop_id, mon_id, mon_tu_chon_1_id, mon_tu_chon_2_id, phai_doi_mat_khau, lop(ten_lop), mon:mon!tai_khoan_mon_id_fkey(mon_id, ten_mon)")
+      .select("tai_khoan_id, ma_so, ho_ten, vai_tro, trang_thai, nam_sinh, sdt_zalo_phu_huynh, email_phu_huynh, lop_id, mon_id, mon_tu_chon_1_id, mon_tu_chon_2_id, phai_doi_mat_khau, lop(ten_lop), mon:mon!tai_khoan_mon_id_fkey(mon_id, ten_mon)")
       .order("created_at", { ascending: false }),
     supabase.from("lop").select("lop_id, ten_lop, khoi").eq("trang_thai", "HoatDong").order("ten_lop"),
     supabase.from("mon").select("mon_id, ten_mon, loai_mon, to_truong_tai_khoan_id").eq("trang_thai", "DangDung").order("ten_mon"),
@@ -34,13 +34,13 @@ export default async function TaiKhoanPage({ searchParams }: { searchParams: Pro
         <h1 className="text-2xl font-bold tracking-tight text-foreground">{isTeacherManagement ? "Quản lý giáo viên" : "Quản lý tài khoản"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isTeacherManagement
-            ? "Quản lý hồ sơ, tài khoản và phân công lớp giảng dạy cho giáo viên."
-            : "Tạo, cập nhật, reset mật khẩu và đình chỉ tài khoản. Không xóa dữ liệu lịch sử."}
+            ? "Xem thông tin giáo viên và phân công môn, lớp giảng dạy."
+            : "Thêm, sửa, đặt lại mật khẩu hoặc tạm khóa tài khoản. Khi tạm khóa, các kết quả thi trước đây vẫn được giữ lại."}
         </p>
       </div>
       {queryError && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          Không thể tải đầy đủ dữ liệu tài khoản. Vui lòng tải lại trang; nếu lỗi tiếp diễn, kiểm tra kết nối Supabase.
+          Chưa tải được đầy đủ danh sách tài khoản. Vui lòng tải lại trang; nếu vẫn gặp lỗi, hãy kiểm tra kết nối mạng.
         </div>
       )}
       {isTeacherManagement ? (

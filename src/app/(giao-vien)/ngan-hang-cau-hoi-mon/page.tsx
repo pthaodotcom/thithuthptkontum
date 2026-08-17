@@ -18,10 +18,10 @@ export default async function NganHangCauHoiMonPage() {
   const mon = Array.isArray(taiKhoan?.mon) ? taiKhoan.mon[0] : taiKhoan?.mon;
 
   if (!taiKhoan?.mon_id || !mon) {
-    return <ThongBao title="Chưa được gán môn" detail="Liên hệ Admin để gán môn phụ trách trước khi xem ngân hàng câu hỏi." />;
+    return <ThongBao title="Chưa có môn phụ trách" detail="Vui lòng liên hệ quản trị viên để cập nhật môn trước khi xem ngân hàng câu hỏi." />;
   }
   if (!mon.ho_tro_ngan_hang_cau_hoi) {
-    return <ThongBao title="Môn không thuộc phạm vi" detail={`Môn ${mon.ten_mon} không sử dụng ngân hàng câu hỏi.`} />;
+    return <ThongBao title="Không có ngân hàng câu hỏi" detail={`Môn ${mon.ten_mon} chưa sử dụng ngân hàng câu hỏi.`} />;
   }
 
   const [{ data: cauHoi }, { data: chuyenDe }, { data: mucDo }, { data: nguoiTao }] = await Promise.all([

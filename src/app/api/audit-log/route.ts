@@ -35,14 +35,14 @@ type AuditRow = {
 export async function GET(request: NextRequest) {
   const session = await laySessionHienHanh();
   if (!session || session.vai_tro !== "Admin") {
-    return apiLoi("KHONG_CO_QUYEN", "Chỉ Admin được xem nhật ký kiểm toán", 403);
+    return apiLoi("KHONG_CO_QUYEN", "Chỉ quản trị viên được xem lịch sử thay đổi.", 403);
   }
 
   const parsed = querySchema.safeParse(
     Object.fromEntries(request.nextUrl.searchParams.entries()),
   );
   if (!parsed.success) {
-    return apiLoi("DU_LIEU_KHONG_HOP_LE", "Bộ lọc audit log không hợp lệ", 422,
+    return apiLoi("DU_LIEU_KHONG_HOP_LE", "Thông tin lọc chưa đúng. Vui lòng chọn lại.", 422,
       parsed.error.flatten());
   }
 
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query.range(from, from + input.pageSize - 1);
   if (error) {
     console.error("audit_log query failed", error);
-    return apiLoi("TRUY_VAN_THAT_BAI", "Không thể tải nhật ký kiểm toán", 500);
+    return apiLoi("TRUY_VAN_THAT_BAI", "Chưa tải được lịch sử thay đổi. Vui lòng thử lại.", 500);
   }
 
   const rows = (data ?? []) as AuditRow[];
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     .select("hanh_dong,doi_tuong,nguoi_thuc_hien_tai_khoan_id").limit(10_000);
   if (facetsError) {
     console.error("audit facets query failed", facetsError);
-    return apiLoi("TRUY_VAN_THAT_BAI", "Không thể tải bộ lọc audit log", 500);
+    return apiLoi("TRUY_VAN_THAT_BAI", "Chưa tải được các lựa chọn lọc. Vui lòng thử lại.", 500);
   }
 
   const actorIds = [...new Set([
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     : { data: [], error: null };
   if (actorError) {
     console.error("audit actor query failed", actorError);
-    return apiLoi("TRUY_VAN_THAT_BAI", "Không thể tải người thực hiện", 500);
+    return apiLoi("TRUY_VAN_THAT_BAI", "Chưa tải được thông tin người thực hiện. Vui lòng thử lại.", 500);
   }
 
   const actorMap = new Map((actors ?? []).map((actor) => [

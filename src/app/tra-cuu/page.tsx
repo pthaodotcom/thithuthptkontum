@@ -17,6 +17,22 @@ import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { layBaoCao } from "@/lib/reports/data";
 
 export const dynamic = "force-dynamic";
+
+const NHAN_TRANG_THAI: Record<string, string> = {
+  ChuaDangNhap: "Chưa vào thi",
+  DangThi: "Đang làm bài",
+  DaNopBai: "Đã nộp bài",
+  BiKhoaChoXuLy: "Đang chờ giám thị xử lý",
+  VangMat: "Vắng mặt",
+  LoiToChuc: "Có sự cố trong ca thi",
+};
+
+const NHAN_VI_PHAM: Record<string, string> = {
+  Copy: "Sao chép nội dung",
+  ChuyenTab: "Rời khỏi màn hình làm bài",
+  MatKetNoi: "Mất kết nối mạng",
+};
+
 export default async function TraCuuPage({ searchParams }: { searchParams: Promise<{ baiLamId?: string }> }) {
   const session = await laySessionHienHanh();
   if (!session) redirect("/dang-nhap");
@@ -25,7 +41,7 @@ export default async function TraCuuPage({ searchParams }: { searchParams: Promi
   if (!baiLamId) {
     return (
       <TraCuuShell>
-        <p className="text-muted-foreground">Chọn một học sinh từ báo cáo để xem chi tiết.</p>
+        <p className="text-muted-foreground">Chọn một bài thi trong báo cáo để xem chi tiết.</p>
       </TraCuuShell>
     );
   }
@@ -87,23 +103,23 @@ export default async function TraCuuPage({ searchParams }: { searchParams: Promi
       </section>
 
       <section className="mt-4 rounded-xl border border-border bg-card p-5">
-        <h2 className="font-semibold text-foreground">Dữ liệu đối chiếu</h2>
+        <h2 className="font-semibold text-foreground">Thông tin bài thi</h2>
         <dl className="mt-2 space-y-1 text-sm text-muted-foreground">
-          <div className="flex gap-1.5"><dt className="font-medium text-foreground">Trạng thái:</dt><dd>{bai.trang_thai}</dd></div>
+          <div className="flex gap-1.5"><dt className="font-medium text-foreground">Trạng thái:</dt><dd>{NHAN_TRANG_THAI[bai.trang_thai] ?? "Chưa xác định"}</dd></div>
           <div className="flex gap-1.5"><dt className="font-medium text-foreground">Nộp lúc:</dt><dd>{bai.thoi_diem_nop ? new Date(bai.thoi_diem_nop).toLocaleString("vi-VN") : "—"}</dd></div>
-          <div className="flex gap-1.5"><dt className="font-medium text-foreground">Số bản ghi trả lời:</dt><dd>{bai.tra_loi?.length || 0}</dd></div>
+          <div className="flex gap-1.5"><dt className="font-medium text-foreground">Số câu trả lời đã lưu:</dt><dd>{bai.tra_loi?.length || 0}</dd></div>
         </dl>
       </section>
 
       <section className="mt-4 rounded-xl border border-border bg-card p-5">
-        <h2 className="font-semibold text-foreground">Log bất thường</h2>
+        <h2 className="font-semibold text-foreground">Vi phạm trong khi làm bài</h2>
         {!bai.vi_pham?.length ? (
           <p className="mt-2 text-sm text-muted-foreground">Không có vi phạm được ghi nhận.</p>
         ) : (
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
             {bai.vi_pham.map((v) => (
               <li key={`${v.loai_vi_pham}-${v.thoi_diem}`}>
-                {v.loai_vi_pham} · {new Date(v.thoi_diem).toLocaleString("vi-VN")}
+                {NHAN_VI_PHAM[v.loai_vi_pham] ?? "Vi phạm khác"} · {new Date(v.thoi_diem).toLocaleString("vi-VN")}
               </li>
             ))}
           </ul>

@@ -61,7 +61,7 @@ export async function taoChuyenDe(ten: string, ma: string): Promise<ActionResult
     const { data: trungMa } = await supabase.from("chuyen_de").select("chuyen_de_id").eq("mon_id", monId).ilike("ma_chuyen_de", maHopLe).maybeSingle();
     if (trungMa) return { success: false, error: "Mã chuyên đề đã tồn tại trong môn" };
     const { error } = await supabase.from("chuyen_de").insert({ mon_id: monId, ten_chuyen_de: tenHopLe, ma_chuyen_de: maHopLe });
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa tạo được chuyên đề. Vui lòng kiểm tra thông tin và thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }
@@ -77,7 +77,7 @@ export async function suaChuyenDe(chuyenDeId: string, ten: string, ma: string): 
     const { data: trungMa } = await supabase.from("chuyen_de").select("chuyen_de_id").eq("mon_id", monId).ilike("ma_chuyen_de", maHopLe).neq("chuyen_de_id", chuyenDeId).maybeSingle();
     if (trungMa) return { success: false, error: "Mã chuyên đề đã tồn tại trong môn" };
     const { error } = await supabase.from("chuyen_de").update({ ten_chuyen_de: tenHopLe, ma_chuyen_de: maHopLe }).eq("chuyen_de_id", chuyenDeId);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa cập nhật được chuyên đề. Vui lòng thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }
@@ -93,7 +93,7 @@ export async function taoBaiHoc(chuyenDeId: string, ten: string, ma: string): Pr
     const { data: trungMa } = await supabase.from("bai_hoc").select("bai_hoc_id").eq("chuyen_de_id", chuyenDeId).ilike("ma_bai_hoc", maHopLe).maybeSingle();
     if (trungMa) return { success: false, error: "Mã bài học đã tồn tại trong chuyên đề" };
     const { error } = await supabase.from("bai_hoc").insert({ chuyen_de_id: chuyenDeId, ten_bai_hoc: tenHopLe, ma_bai_hoc: maHopLe });
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa tạo được bài học. Vui lòng kiểm tra thông tin và thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }
@@ -111,7 +111,7 @@ export async function suaBaiHoc(baiHocId: string, ten: string, ma: string): Prom
     const { data: trungMa } = await supabase.from("bai_hoc").select("bai_hoc_id").eq("chuyen_de_id", baiHoc.chuyen_de_id).ilike("ma_bai_hoc", maHopLe).neq("bai_hoc_id", baiHocId).maybeSingle();
     if (trungMa) return { success: false, error: "Mã bài học đã tồn tại trong chuyên đề" };
     const { error } = await supabase.from("bai_hoc").update({ ten_bai_hoc: tenHopLe, ma_bai_hoc: maHopLe }).eq("bai_hoc_id", baiHocId);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa cập nhật được bài học. Vui lòng thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }
@@ -121,7 +121,7 @@ export async function doiTrangThaiChuyenDe(chuyenDeId: string, trangThai: "DangD
   try {
     const { supabase } = await damBaoChuyenDeThuocMon(chuyenDeId);
     const { error } = await supabase.from("chuyen_de").update({ trang_thai: trangThai }).eq("chuyen_de_id", chuyenDeId);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa thay đổi được trạng thái chuyên đề. Vui lòng thử lại." };
     if (trangThai === "VoHieuHoa") await supabase.from("bai_hoc").update({ trang_thai: "VoHieuHoa" }).eq("chuyen_de_id", chuyenDeId);
     revalidatePath("/khung-chuyen-de");
     return { success: true };
@@ -132,7 +132,7 @@ export async function doiTrangThaiBaiHoc(baiHocId: string, trangThai: "DangDung"
   try {
     const { supabase } = await damBaoBaiHocThuocMon(baiHocId);
     const { error } = await supabase.from("bai_hoc").update({ trang_thai: trangThai }).eq("bai_hoc_id", baiHocId);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa thay đổi được trạng thái bài học. Vui lòng thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }
@@ -142,9 +142,9 @@ export async function xoaBaiHoc(baiHocId: string): Promise<ActionResult> {
   try {
     const { supabase } = await damBaoBaiHocThuocMon(baiHocId);
     const { count } = await supabase.from("cau_hoi").select("*", { count: "exact", head: true }).eq("bai_hoc_id", baiHocId);
-    if ((count || 0) > 0) return { success: false, error: "Bài học đã có câu hỏi; chỉ có thể vô hiệu hóa" };
+    if ((count || 0) > 0) return { success: false, error: "Bài học đã có câu hỏi nên không thể xóa. Bạn có thể chọn ngừng sử dụng." };
     const { error } = await supabase.from("bai_hoc").delete().eq("bai_hoc_id", baiHocId);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa xóa được bài học. Vui lòng thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }
@@ -157,11 +157,11 @@ export async function xoaChuyenDe(chuyenDeId: string): Promise<ActionResult> {
     const ids = (baiHoc || []).map(item => item.bai_hoc_id);
     if (ids.length) {
       const { count } = await supabase.from("cau_hoi").select("*", { count: "exact", head: true }).in("bai_hoc_id", ids);
-      if ((count || 0) > 0) return { success: false, error: "Chuyên đề đã có câu hỏi; chỉ có thể vô hiệu hóa" };
+      if ((count || 0) > 0) return { success: false, error: "Chuyên đề đã có câu hỏi nên không thể xóa. Bạn có thể chọn ngừng sử dụng." };
       await supabase.from("bai_hoc").delete().eq("chuyen_de_id", chuyenDeId);
     }
     const { error } = await supabase.from("chuyen_de").delete().eq("chuyen_de_id", chuyenDeId);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Chưa xóa được chuyên đề. Vui lòng thử lại." };
     revalidatePath("/khung-chuyen-de");
     return { success: true };
   } catch (error) { return loi(error); }

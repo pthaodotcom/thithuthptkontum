@@ -29,7 +29,7 @@ describe("validateBaremMon (FR-M1-01)", () => {
       phan1DiemMoiCau: 0.25,
     });
     expect(ketQua.hopLe).toBe(false);
-    expect(ketQua.loi.some((l) => l.includes("Tong diem"))).toBe(true);
+    expect(ketQua.loi.some((l) => l.includes("Tổng điểm"))).toBe(true);
   });
 
   it("tu choi neu thang Phan II khong tang dan", () => {
@@ -45,6 +45,6 @@ describe("validateBaremMon (FR-M1-01)", () => {
       phan3DiemMoiCau: null,
     });
     expect(ketQua.hopLe).toBe(false);
-    expect(ketQua.loi.some((l) => l.includes("luy tien"))).toBe(true);
+    expect(ketQua.loi.some((l) => l.includes("tăng dần"))).toBe(true);
   });
 });

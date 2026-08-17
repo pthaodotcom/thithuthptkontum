@@ -14,7 +14,7 @@ export async function capNhatKhungGio(
     .upsert({ so_thu_tu_ca, gio_bat_dau, thoi_luong_phut }, { onConflict: "so_thu_tu_ca" });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "Chưa lưu được khung giờ. Vui lòng kiểm tra thông tin và thử lại." };
   }
   revalidatePath("/khung-gio");
   return { success: true };
