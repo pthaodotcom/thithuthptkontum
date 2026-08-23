@@ -29,8 +29,8 @@ export function NotificationMenu({ items }: { items: ThongBaoItem[] }) {
   });
 
   return <details className="group relative">
-    <summary className="relative flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-border bg-background text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-      <Bell className="h-5 w-5" aria-hidden="true" />
+    <summary className="relative flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+      <Bell className="h-4 w-4" aria-hidden="true" />
       <span className="sr-only">Thông báo{unread?` — ${unread} chưa đọc`:""}</span>
       {unread>0&&<span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground ring-2 ring-card">{unread>9?"9+":unread}</span>}
     </summary>

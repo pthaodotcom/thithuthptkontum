@@ -24,7 +24,19 @@ export default async function BaoCaoTheoMonPage({
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
       {!monId && <DashboardOverview scope="to-truong" />}
-      <div id="bo-loc-bao-cao"><BoLocBaoCao monOptions={monOptions} lopOptions={lopOptions} caThiOptions={caThiOptions} monId={monId} lopId={lopId} caThiMonId={caThiMonId} /></div>
+      <section id="bo-loc-bao-cao" className="scroll-mt-24" aria-labelledby="bo-loc-title">
+        <BoLocBaoCao
+          monOptions={monOptions}
+          lopOptions={lopOptions}
+          caThiOptions={caThiOptions}
+          monId={monId}
+          lopId={lopId}
+          caThiMonId={caThiMonId}
+          eyebrow="Phạm vi báo cáo"
+          title="Bộ lọc dữ liệu môn học"
+          description="Chọn môn, lớp và ca thi để xem báo cáo chi tiết lớp phụ trách hoặc so sánh toàn trường."
+        />
+      </section>
       {monId && !daChonDu && <SubjectOverview monId={monId} />}
       {daChonDu && <ReportOverview title="Báo cáo chi tiết lớp" monId={monId} lopId={lopId} caThiMonId={caThiMonId} />}
     </main>

@@ -22,9 +22,21 @@ export default async function BaoCaoLopPage({
   const daChonDu = Boolean(monId && lopId && caThiMonId);
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-6">
+    <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6">
+      <section id="bo-loc-bao-cao" className="scroll-mt-24" aria-labelledby="bo-loc-title">
+        <BoLocBaoCao
+          monOptions={monOptions}
+          lopOptions={lopOptions}
+          caThiOptions={caThiOptions}
+          monId={monId}
+          lopId={lopId}
+          caThiMonId={caThiMonId}
+          eyebrow="Phạm vi báo cáo"
+          title="Chọn dữ liệu cần xem"
+          description="Chọn lần lượt môn, lớp và ca thi. Hệ thống sẽ cập nhật báo cáo ngay sau lựa chọn cuối cùng."
+        />
+      </section>
       {!daChonDu && <DashboardOverview scope="giao-vien" />}
-      <div id="bo-loc-bao-cao"><BoLocBaoCao monOptions={monOptions} lopOptions={lopOptions} caThiOptions={caThiOptions} monId={monId} lopId={lopId} caThiMonId={caThiMonId} /></div>
       {daChonDu && <ReportOverview title="Báo cáo lớp phụ trách" monId={monId} lopId={lopId} caThiMonId={caThiMonId} />}
     </main>
   );

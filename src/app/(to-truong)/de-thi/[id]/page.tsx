@@ -13,7 +13,8 @@ type Snapshot = {
   snapshot_id: string;
   phan: Part;
   noi_dung: string;
-  chi_tiet_cau_hoi_snapshot: { id: string; thu_tu: number; noi_dung: string }[];
+  dap_an_phan3: string | null;
+  chi_tiet_cau_hoi_snapshot: { id: string; thu_tu: number; noi_dung: string; la_dap_an_dung: boolean }[];
 };
 type DisplayItem = { snapshot_id: string; phan: Part; thu_tu_phuong_an?: number[] };
 
@@ -22,12 +23,16 @@ export default async function XemDeThiPage({ params }: { params: Promise<{ id: s
   if (!session || session.vai_tro !== "GiaoVien") redirect("/dang-nhap");
   const { id } = await params;
   const supabase = taoSupabaseServiceRole();
-  const { data: mon } = await supabase.from("mon").select("mon_id,ten_mon").eq("to_truong_tai_khoan_id", session.sub).maybeSingle();
+  const { data: taiKhoan } = await supabase.from("tai_khoan").select("mon_id").eq("tai_khoan_id", session.sub).maybeSingle();
+  const { data: mon } = await supabase.from("mon").select("mon_id,ten_mon,to_truong_tai_khoan_id").eq("mon_id", taiKhoan?.mon_id ?? "").maybeSingle();
   if (!mon) notFound();
+  const laToTruong = mon.to_truong_tai_khoan_id === session.sub;
 
+  let examQuery = supabase.from("de_thi").select("de_thi_id,trang_thai,so_ma_de,created_at,ca_thi_mon!inner(mon_id,ca_thi(dot_thi(ten_dot_thi)))").eq("de_thi_id", id).eq("ca_thi_mon.mon_id", mon.mon_id);
+  if (!laToTruong) examQuery = examQuery.neq("trang_thai", "DangSoan");
   const [{ data: exam }, { data: snapshots }, { data: codes }] = await Promise.all([
-    supabase.from("de_thi").select("de_thi_id,trang_thai,so_ma_de,created_at,ca_thi_mon!inner(mon_id,ca_thi(dot_thi(ten_dot_thi)))").eq("de_thi_id", id).eq("ca_thi_mon.mon_id", mon.mon_id).maybeSingle(),
-    supabase.from("cau_hoi_snapshot").select("snapshot_id,phan,noi_dung,chi_tiet_cau_hoi_snapshot(id,thu_tu,noi_dung)").eq("de_thi_id", id),
+    examQuery.maybeSingle(),
+    supabase.from("cau_hoi_snapshot").select("snapshot_id,phan,noi_dung,dap_an_phan3,chi_tiet_cau_hoi_snapshot(id,thu_tu,noi_dung,la_dap_an_dung)").eq("de_thi_id", id),
     supabase.from("ma_de").select("ma_de_id,so_thu_tu_ma,thu_tu_hien_thi").eq("de_thi_id", id).order("so_thu_tu_ma"),
   ]);
   if (!exam) notFound();
@@ -65,12 +70,38 @@ export default async function XemDeThiPage({ params }: { params: Promise<{ id: s
                 <div className="rounded border-2 border-slate-900 px-5 py-2"><p className="text-xs uppercase">Mã đề</p><p className="text-xl font-bold tabular-nums">{String(code.so_thu_tu_ma).padStart(3, "0")}</p></div>
               </header>
               {(["I", "II", "III"] as Part[]).map((part) => <ExamPart key={part} part={part} items={display} snapshotMap={snapshotMap} />)}
+              <ExamAnswerKey items={display} snapshotMap={snapshotMap} />
             </article>
           </div>
         </details>;
       })}
     </section>
   </div>;
+}
+
+function ExamAnswerKey({ items, snapshotMap }: { items: DisplayItem[]; snapshotMap: Map<string, Snapshot> }) {
+  const answers = (["I", "II", "III"] as Part[]).flatMap((part) => {
+    const questions = items.filter((item) => item.phan === part).map((item) => {
+      const snapshot = snapshotMap.get(item.snapshot_id);
+      if (!snapshot) return null;
+      const rank = new Map((item.thu_tu_phuong_an ?? []).map((value, order) => [value, order]));
+      const details = [...(snapshot.chi_tiet_cau_hoi_snapshot ?? [])].sort((a, b) => (rank.get(a.thu_tu) ?? a.thu_tu) - (rank.get(b.thu_tu) ?? b.thu_tu));
+      const answer = part === "III"
+        ? snapshot.dap_an_phan3 || "Chưa có đáp án"
+        : part === "I"
+          ? (details.findIndex((detail) => detail.la_dap_an_dung) >= 0 ? String.fromCharCode(65 + details.findIndex((detail) => detail.la_dap_an_dung)) : "Chưa có đáp án")
+          : details.map((detail) => detail.la_dap_an_dung ? "Đ" : "S").join(" ");
+      return answer;
+    }).filter((answer): answer is string => Boolean(answer));
+    return questions.length ? [{ part, answers: questions }] : [];
+  });
+
+  return <section className="mt-8 border-t-2 border-slate-900 pt-5" aria-labelledby="answer-key-title">
+    <h3 id="answer-key-title" className="text-base font-bold uppercase">Đáp án</h3>
+    <div className="mt-3 space-y-2 text-sm leading-6">
+      {answers.map(({ part, answers: partAnswers }) => <p key={part}><strong>Phần {part}:</strong> {partAnswers.map((answer, index) => <span key={`${part}-${index}`} className="mr-3 inline-block"><span className="font-semibold">{index + 1}.</span> {answer}</span>)}</p>)}
+    </div>
+  </section>;
 }
 
 function ExamPart({ part, items, snapshotMap }: { part: Part; items: DisplayItem[]; snapshotMap: Map<string, Snapshot> }) {

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { BarChart3, BookOpen, FilePenLine, MessageSquareWarning } from "lucide-react";
+import { BarChart3, BookOpen, FilePenLine, Files, MessageSquareWarning } from "lucide-react";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
@@ -12,6 +12,7 @@ const navGroups: DashboardNavGroup[] = [
       { href: "/soan-cau-hoi", label: "Soạn câu hỏi", icon: FilePenLine },
       { href: "/ngan-hang-cau-hoi-mon", label: "Ngân hàng câu hỏi", icon: BookOpen },
       { href: "/yeu-cau-chinh-sua", label: "Yêu cầu chỉnh sửa", icon: MessageSquareWarning },
+      { href: "/de-thi", label: "Đề thi", icon: Files },
       { href: "/bao-cao-lop", label: "Báo cáo lớp", icon: BarChart3 },
     ],
   },

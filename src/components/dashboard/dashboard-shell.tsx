@@ -13,11 +13,11 @@ export type DashboardNavGroup = { label?: string; items: DashboardNavItem[] };
 
 function Navigation({ navGroups, label }: { navGroups: DashboardNavGroup[]; label: string }) {
   return (
-    <nav aria-label={label} className="space-y-5">
+    <nav aria-label={label} className="space-y-4">
       {navGroups.map((group, idx) => (
         <div key={group.label ?? idx} className="space-y-1">
           {group.label && (
-            <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70">
+            <p className="px-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/70">
               {group.label}
             </p>
           )}
@@ -59,27 +59,27 @@ export async function DashboardShell({
         Chuyển đến nội dung chính
       </a>
 
-      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border/80 bg-card/95 shadow-[8px_0_30px_rgba(15,23,42,0.03)] backdrop-blur-xl lg:flex">
-        <div className="flex items-center gap-3 border-b border-border/70 px-6 py-5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <GraduationCap className="h-5 w-5" aria-hidden="true" />
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border/80 bg-card/95 shadow-[8px_0_30px_rgba(15,23,42,0.03)] backdrop-blur-xl lg:flex">
+        <div className="flex items-center gap-2.5 border-b border-border/70 px-4 py-3.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+            <GraduationCap className="h-[18px] w-[18px]" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-bold leading-tight">{brandLabel}</p>
-            {brandSub && <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{brandSub}</p>}
+            <p className="truncate text-sm font-bold leading-tight">{brandLabel}</p>
+            {brandSub && <p className="truncate text-[11px] font-medium text-muted-foreground">{brandSub}</p>}
           </div>
           <div className="ml-auto"><NotificationMenu items={notifications}/></div>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-5">
+        <div className="flex-1 overflow-y-auto px-3 py-4">
           <Navigation navGroups={navGroups} label="Điều hướng chính" />
         </div>
-        <div className="border-t border-border/70 bg-muted/30 p-4">
+        <div className="border-t border-border/70 bg-muted/30 p-3">
           <Link
             href="/thong-tin-tai-khoan"
             aria-label="Xem thông tin tài khoản cá nhân"
-            className="group mb-3 flex min-h-14 cursor-pointer items-center gap-3 rounded-xl bg-card px-2 py-2 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="group mb-2.5 flex min-h-12 cursor-pointer items-center gap-2.5 rounded-lg bg-card px-2 py-1.5 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-sm font-bold text-accent ring-1 ring-accent/15">{initial}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-xs font-bold text-accent ring-1 ring-accent/15">{initial}</span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{userName}</p>
               <p className="truncate text-xs text-muted-foreground">{userRole}</p>
@@ -128,8 +128,8 @@ export async function DashboardShell({
       </header>
 
       <main id="noi-dung-chinh" className="min-w-0 flex-1">
-        <div className="mx-auto max-w-[1540px] px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-9">
-          <div className="mb-5 flex items-center gap-2 text-xs font-medium text-muted-foreground lg:mb-7">
+        <div className="mx-auto max-w-[1540px] px-4 py-5 sm:px-5 sm:py-6 lg:px-6 lg:py-6">
+          <div className="mb-4 flex items-center gap-2 text-xs font-medium text-muted-foreground lg:mb-5">
             <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             Thi thử trực tuyến
           </div>

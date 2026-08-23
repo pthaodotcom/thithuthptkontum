@@ -94,28 +94,28 @@ export default function RichContentEditor({
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-slate-50 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b bg-slate-50 px-2.5 py-1.5">
         <div className="flex flex-wrap gap-1">
           {tools.map(({ title, icon: Icon, action }) => (
-            <button key={title} type="button" title={title} aria-label={title} onClick={action} className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition hover:bg-white hover:text-slate-950 hover:shadow-sm">
+            <button key={title} type="button" title={title} aria-label={title} onClick={action} className="flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition hover:bg-white hover:text-slate-950 hover:shadow-sm">
               <Icon className="h-4 w-4" />
             </button>
           ))}
           <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(event) => void insertImage(event.target.files?.[0])} />
         </div>
-        <div className="flex rounded-lg border bg-white p-1">
-          <button type="button" onClick={() => setMode("edit")} className={`rounded-md px-3 py-1.5 text-sm font-medium ${mode === "edit" ? "bg-primary text-primary-foreground" : "text-slate-600"}`}>Soạn thảo</button>
-          <button type="button" onClick={() => setMode("preview")} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium ${mode === "preview" ? "bg-primary text-primary-foreground" : "text-slate-600"}`}><Eye className="h-4 w-4" />Xem trước</button>
+        <div className="flex rounded-lg border bg-white p-0.5">
+          <button type="button" onClick={() => setMode("edit")} className={`rounded-md px-2.5 py-1 text-xs font-medium ${mode === "edit" ? "bg-primary text-primary-foreground" : "text-slate-600"}`}>Soạn thảo</button>
+          <button type="button" onClick={() => setMode("preview")} className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${mode === "preview" ? "bg-primary text-primary-foreground" : "text-slate-600"}`}><Eye className="h-3.5 w-3.5" />Xem trước</button>
         </div>
       </div>
       {mode === "edit" ? (
-        <textarea ref={textareaRef} className={`${minHeightClass} w-full resize-y border-0 p-4 text-base leading-7 outline-none`} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+        <textarea ref={textareaRef} className={`${minHeightClass} w-full resize-y border-0 p-3 text-sm leading-6 outline-none`} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
       ) : (
-        <div className={`${minHeightClass} bg-white p-5`}>
-          {value.trim() ? <RichContent value={value} className="text-base leading-7" /> : <p className="text-slate-400">Chưa có nội dung để xem trước.</p>}
+        <div className={`${minHeightClass} bg-white p-3`}>
+          {value.trim() ? <RichContent value={value} className="text-sm leading-6" /> : <p className="text-sm text-slate-400">Chưa có nội dung để xem trước.</p>}
         </div>
       )}
-      <div className="border-t bg-slate-50 px-4 py-2 text-xs text-slate-500">
+      <div className="border-t bg-slate-50 px-3 py-1.5 text-[11px] text-slate-500">
         Có thể định dạng chữ, công thức toán, bảng, liên kết và ảnh tối đa 2 MB.
       </div>
     </div>
