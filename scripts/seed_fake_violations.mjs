@@ -31,58 +31,76 @@ async function seedViolations() {
   const selectedCtm = ctmList[0];
   console.log(`Using CaThiMon: ${selectedCtm.id} (${selectedCtm.mon?.ten_mon} - ${selectedCtm.ca_thi?.dot_thi?.ten_dot_thi})`);
 
-  // Define 6 student violation profiles
+  // Define 6 student violation profiles with score and submitted state
   const violationProfiles = [
     {
       studentIndex: 0,
+      diem_tong: 3.5,
+      so_cau_dung: 14,
+      so_cau_sai: 26,
       violations: [
         { loai_vi_pham: "ChuyenTab", minutesAgo: 25 },
         { loai_vi_pham: "ChuyenTab", minutesAgo: 18 },
         { loai_vi_pham: "ChuyenTab", minutesAgo: 8 },
         { loai_vi_pham: "Copy", minutesAgo: 3 },
       ],
-      trang_thai: "DangThi",
+      trang_thai: "DaNopBai",
     },
     {
       studentIndex: 1,
+      diem_tong: 6.2,
+      so_cau_dung: 25,
+      so_cau_sai: 15,
       violations: [
         { loai_vi_pham: "Copy", minutesAgo: 30 },
         { loai_vi_pham: "Copy", minutesAgo: 15 },
       ],
-      trang_thai: "DangThi",
+      trang_thai: "DaNopBai",
     },
     {
       studentIndex: 2,
+      diem_tong: 5.4,
+      so_cau_dung: 22,
+      so_cau_sai: 18,
       violations: [
         { loai_vi_pham: "ChuyenTab", minutesAgo: 22 },
         { loai_vi_pham: "MatKetNoi", minutesAgo: 12 },
       ],
-      trang_thai: "DangThi",
+      trang_thai: "DaNopBai",
     },
     {
       studentIndex: 3,
+      diem_tong: 2.8,
+      so_cau_dung: 11,
+      so_cau_sai: 29,
       violations: [
         { loai_vi_pham: "ChuyenTab", minutesAgo: 35 },
         { loai_vi_pham: "ChuyenTab", minutesAgo: 28 },
         { loai_vi_pham: "ChuyenTab", minutesAgo: 10 },
       ],
-      trang_thai: "BiKhoaChoXuLy",
+      trang_thai: "DaNopBai",
     },
     {
       studentIndex: 4,
+      diem_tong: 7.6,
+      so_cau_dung: 30,
+      so_cau_sai: 10,
       violations: [
         { loai_vi_pham: "MatKetNoi", minutesAgo: 19 },
       ],
-      trang_thai: "DangThi",
+      trang_thai: "DaNopBai",
     },
     {
       studentIndex: 5,
+      diem_tong: 4.2,
+      so_cau_dung: 17,
+      so_cau_sai: 23,
       violations: [
         { loai_vi_pham: "Copy", minutesAgo: 27 },
         { loai_vi_pham: "ChuyenTab", minutesAgo: 16 },
         { loai_vi_pham: "Copy", minutesAgo: 5 },
       ],
-      trang_thai: "DangThi",
+      trang_thai: "DaNopBai",
     },
   ];
 
@@ -98,15 +116,21 @@ async function seedViolations() {
       .eq("hoc_sinh_tai_khoan_id", student.tai_khoan_id)
       .maybeSingle();
 
+    const updatePayload = {
+      ca_thi_mon_id: selectedCtm.id,
+      hoc_sinh_tai_khoan_id: student.tai_khoan_id,
+      trang_thai: prof.trang_thai,
+      thoi_diem_vao_thi: new Date(Date.now() - 40 * 60_000).toISOString(),
+      thoi_diem_nop: new Date(Date.now() - 2 * 60_000).toISOString(),
+      diem_tong: prof.diem_tong,
+      so_cau_dung: prof.so_cau_dung,
+      so_cau_sai: prof.so_cau_sai,
+    };
+
     if (!attempt) {
       const { data: newAttempt, error: createError } = await supabase
         .from("bai_lam_thi")
-        .insert({
-          ca_thi_mon_id: selectedCtm.id,
-          hoc_sinh_tai_khoan_id: student.tai_khoan_id,
-          trang_thai: prof.trang_thai,
-          thoi_diem_vao_thi: new Date(Date.now() - 40 * 60_000).toISOString(),
-        })
+        .insert(updatePayload)
         .select("bai_lam_id")
         .single();
 
@@ -118,7 +142,7 @@ async function seedViolations() {
     } else {
       await supabase
         .from("bai_lam_thi")
-        .update({ trang_thai: prof.trang_thai })
+        .update(updatePayload)
         .eq("bai_lam_id", attempt.bai_lam_id);
     }
 
@@ -140,7 +164,7 @@ async function seedViolations() {
     }
   }
 
-  console.log("Finished seeding violations successfully!");
+  console.log("Finished seeding violations with completed exam state successfully!");
 }
 
 seedViolations().catch((err) => {
