@@ -161,17 +161,17 @@ export default function BoLocBaoCao({
         </div>
       )}
 
-      <div className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="space-y-3 pt-1">
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.7fr)]">
           <div className="min-w-0 space-y-1.5">
             <label className="text-sm font-medium text-foreground">Môn</label>
             <Select value={selectedMon} onValueChange={(value) => value && chooseMon(value)}>
-              <SelectTrigger className="h-10 w-full min-w-0">
+              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl bg-card border-border shadow-2xs">
                 <SelectValue placeholder="Chọn môn">
                   {monOptions.find((m) => m.mon_id === selectedMon)?.ten_mon}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 {monOptions.map((m) => (
                   <SelectItem key={m.mon_id} value={m.mon_id}>
                     {m.ten_mon}
@@ -187,7 +187,7 @@ export default function BoLocBaoCao({
               onValueChange={(value) => value && chooseLop(value)}
               disabled={!selectedMon || loading === "lop" || localLopOptions.length === 0}
             >
-              <SelectTrigger className="h-10 w-full min-w-0">
+              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl bg-card border-border shadow-2xs">
                 <SelectValue
                   placeholder={
                     loading === "lop"
@@ -202,7 +202,7 @@ export default function BoLocBaoCao({
                     : undefined}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 {localLopOptions.map((l) => (
                   <SelectItem key={l.lop_id} value={l.lop_id}>
                     {l.ten_lop} ({l.khoi})
@@ -218,7 +218,7 @@ export default function BoLocBaoCao({
               onValueChange={(value) => value && setSelectedCa(value)}
               disabled={!selectedLop || loading === "ca" || localCaOptions.length === 0}
             >
-              <SelectTrigger className="h-10 w-full min-w-0 overflow-hidden">
+              <SelectTrigger className="h-10 w-full min-w-0 overflow-hidden rounded-xl bg-card border-border shadow-2xs">
                 <SelectValue
                   className="min-w-0 flex-1 overflow-hidden"
                   placeholder={
@@ -235,7 +235,7 @@ export default function BoLocBaoCao({
                   })()}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 {localCaOptions.map((c) => (
                   <SelectItem key={c.ca_thi_mon_id} value={c.ca_thi_mon_id}>
                     {nhanCaThi(c)}
