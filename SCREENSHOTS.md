@@ -39,11 +39,11 @@ Tất cả file ảnh chụp màn hình chất lượng cao được lưu trữ 
 ### 11. Báo cáo thống kê toàn trường & Dashboard (`/bao-cao`)
 ![Báo cáo thống kê toàn trường](./screenshots/admin_11_bao_cao.png)
 
-### 12. Báo cáo tiến độ học sinh (`/bao-cao-hoc-sinh`)
-![Báo cáo tiến độ học sinh](./screenshots/admin_12_bao_cao_hoc_sinh.png)
+### 12. Nhật ký báo cáo (`/bao-cao-hoc-sinh`)
+![Nhật ký báo cáo](./screenshots/admin_12_bao_cao_hoc_sinh.png)
 
-### 13. Cấu hình & Gửi Email kết quả (`/thong-bao-email`)
-![Email kết quả](./screenshots/admin_13_thong_bao_email.png)
+### 13. Nhật ký email (`/thong-bao-email`)
+![Nhật ký email](./screenshots/admin_13_thong_bao_email.png)
 
 ### 14. Thiết lập lịch Demo / Bypass (`/mo-thi-ngay`)
 ![Thiết lập lịch demo](./screenshots/admin_14_mo_thi_ngay.png)

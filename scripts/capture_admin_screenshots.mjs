@@ -40,8 +40,8 @@ async function run() {
     { name: "admin_09_quan_ly_vi_pham.png", url: `${baseUrl}/quan-ly-vi-pham`, title: "Quản lý Vi phạm" },
     { name: "admin_10_audit_log.png", url: `${baseUrl}/audit-log`, title: "Lịch sử thay đổi (Audit Log)" },
     { name: "admin_11_bao_cao.png", url: `${baseUrl}/bao-cao`, title: "Báo cáo thống kê toàn trường" },
-    { name: "admin_12_bao_cao_hoc_sinh.png", url: `${baseUrl}/bao-cao-hoc-sinh`, title: "Báo cáo tiến độ học sinh" },
-    { name: "admin_13_thong_bao_email.png", url: `${baseUrl}/thong-bao-email`, title: "Email kết quả" },
+    { name: "admin_12_bao_cao_hoc_sinh.png", url: `${baseUrl}/bao-cao-hoc-sinh`, title: "Nhật ký báo cáo" },
+    { name: "admin_13_thong_bao_email.png", url: `${baseUrl}/thong-bao-email`, title: "Nhật ký email" },
     { name: "admin_14_mo_thi_ngay.png", url: `${baseUrl}/mo-thi-ngay`, title: "Thiết lập lịch demo" },
     { name: "admin_15_thong_tin_tai_khoan.png", url: `${baseUrl}/thong-tin-tai-khoan`, title: "Thông tin tài khoản Admin" },
   ];

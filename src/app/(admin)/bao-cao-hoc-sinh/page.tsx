@@ -73,7 +73,7 @@ export default async function BaoCaoHocSinhPage({ searchParams }: { searchParams
 
   return <div className="space-y-5">
     <div className="flex flex-wrap items-end justify-between gap-4">
-      <div><h1 className="flex items-center gap-2 text-2xl font-bold"><UserRoundSearch className="h-6 w-6 text-primary" />Báo cáo học sinh</h1><p className="mt-1 text-sm text-muted-foreground">Xem điểm và nhận xét của từng học sinh theo đợt thi.</p></div>
+      <div><h1 className="flex items-center gap-2 text-2xl font-bold"><UserRoundSearch className="h-6 w-6 text-primary" />Nhật ký báo cáo</h1><p className="mt-1 text-sm text-muted-foreground">Theo dõi và quản lý báo cáo kết quả kèm nhận xét AI của từng học sinh theo đợt thi.</p></div>
       <form className="flex min-w-72 gap-2"><label className="sr-only" htmlFor="q">Tìm học sinh</label><input id="q" name="q" defaultValue={q} placeholder="Tên hoặc mã học sinh" className="min-h-11 flex-1 rounded-lg border border-border bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" /><button className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"><Search className="h-4 w-4" />Tìm</button></form>
     </div>
 

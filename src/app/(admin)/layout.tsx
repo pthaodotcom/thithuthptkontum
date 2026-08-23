@@ -54,8 +54,8 @@ const navGroups: DashboardNavGroup[] = [
     label: "Kết quả",
     items: [
       { href: "/bao-cao", label: "Báo cáo", icon: BarChart3 },
-      { href: "/bao-cao-hoc-sinh", label: "Báo cáo học sinh", icon: UserRoundSearch },
-      { href: "/thong-bao-email", label: "Email kết quả", icon: Mail },
+      { href: "/bao-cao-hoc-sinh", label: "Nhật ký báo cáo", icon: UserRoundSearch },
+      { href: "/thong-bao-email", label: "Nhật ký email", icon: Mail },
     ],
   },
   ...(demoBypassDangBat()
