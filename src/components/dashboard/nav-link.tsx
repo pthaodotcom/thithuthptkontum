@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
@@ -16,8 +16,6 @@ export function DashboardNavLink({
   icon: ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const daPrefetch = useRef(false);
   const searchParams = useSearchParams();
   const [hrefPath, hrefQuery] = href.split("?");
   const currentQuery = searchParams.toString();
@@ -28,18 +26,9 @@ export function DashboardNavLink({
     ? pathname === hrefPath && currentQuery === hrefQuery
     : (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)) && currentQuery === "";
 
-  function prefetchMotLan() {
-    if (daPrefetch.current) return;
-    daPrefetch.current = true;
-    router.prefetch(href);
-  }
-
   return (
     <Link
       href={href}
-      prefetch={false}
-      onMouseEnter={prefetchMotLan}
-      onFocus={prefetchMotLan}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-all duration-200",

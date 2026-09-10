@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -226,6 +226,11 @@ export default function ExamClient({
     };
   }, [baiLamId, gioKetThuc, dongBo, nop, pending, viPham, xepAutosave]);
 
+  const set = useCallback((answer: TraLoiOffline) => setDapAn((items) => [
+    ...items.filter((x) => !(x.cauHoiSnapshotId === answer.cauHoiSnapshotId && x.chiTietThuTu === answer.chiTietThuTu)),
+    answer,
+  ]), []);
+
   if (!hydrated) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -272,11 +277,6 @@ export default function ExamClient({
       </div>
     );
   }
-
-  const set = (answer: TraLoiOffline) => setDapAn((items) => [
-    ...items.filter((x) => !(x.cauHoiSnapshotId === answer.cauHoiSnapshotId && x.chiTietThuTu === answer.chiTietThuTu)),
-    answer,
-  ]);
 
   const daTraLoi = (c: Cau) => {
     if (c.phan === "I") return dapAn.some((t) => t.cauHoiSnapshotId === c.snapshotId && Boolean(t.dapAnLuaChonId));
@@ -360,108 +360,8 @@ export default function ExamClient({
       </div>
 
       {cauHoi.map((c, i) => {
-        const done = daTraLoi(c);
         return (
-          <article key={c.snapshotId} id={`cau-${i + 1}`} className="scroll-mt-28 rounded-xl border border-border bg-card p-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {i + 1}
-                </span>
-                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                  Phần {c.phan}
-                </span>
-              </div>
-              {done && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-label="Đã trả lời" />}
-            </div>
-
-            <div className="rich-content" dangerouslySetInnerHTML={{ __html: c.noiDung }} />
-
-            {c.phan === "I" && (
-              <div className="mt-4 space-y-2">
-                {c.chiTiet.map((x, idx) => {
-                  const checked = dapAn.some((t) => t.cauHoiSnapshotId === c.snapshotId && t.dapAnLuaChonId === x.id);
-                  return (
-                    <label
-                      key={x.id}
-                      className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
-                        checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
-                      )}
-                    >
-                      <input
-                        data-testid={`answer-${c.snapshotId}-${x.thuTu}`}
-                        type="radio"
-                        name={c.snapshotId}
-                        className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
-                        checked={checked}
-                        onChange={() => set({ cauHoiSnapshotId: c.snapshotId, chiTietThuTu: 0, dapAnLuaChonId: x.id })}
-                      />
-                      <span className="flex-1 pt-px">
-                        <span className="mr-1.5 font-medium text-muted-foreground">{String.fromCharCode(65 + idx)}.</span>
-                        <span dangerouslySetInnerHTML={{ __html: x.noiDung }} />
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-
-            {c.phan === "II" && (
-              <div className="mt-4 divide-y divide-border rounded-lg border border-border">
-                {c.chiTiet.map((x, idx) => (
-                  <div key={x.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
-                    <span className="flex-1">
-                      <span className="mr-1.5 font-medium text-muted-foreground">{String.fromCharCode(97 + idx)})</span>
-                      <span dangerouslySetInnerHTML={{ __html: x.noiDung }} />
-                    </span>
-                    <div className="flex shrink-0 gap-2" role="group" aria-label={`Ý ${idx + 1}`}>
-                      {[true, false].map((value) => {
-                        const active = dapAn.some(
-                          (t) => t.cauHoiSnapshotId === c.snapshotId && t.chiTietThuTu === x.thuTu && t.dapAnDungSai === value
-                        );
-                        return (
-                          <button
-                            key={String(value)}
-                            type="button"
-                            aria-pressed={active}
-                            className={cn(
-                              "h-9 min-w-16 rounded-md border px-3 text-sm font-medium transition-colors",
-                              active
-                                ? value
-                                  ? "border-emerald-600 bg-emerald-600 text-white"
-                                  : "border-destructive bg-destructive text-destructive-foreground"
-                                : "border-border bg-background text-muted-foreground hover:bg-muted"
-                            )}
-                            onClick={() => set({ cauHoiSnapshotId: c.snapshotId, chiTietThuTu: x.thuTu, dapAnDungSai: value })}
-                          >
-                            {value ? "Đúng" : "Sai"}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {c.phan === "III" && (
-              <div className="mt-4">
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Đáp số (tối đa 4 ký tự)</label>
-                <input
-                  className="h-11 w-40 rounded-lg border border-input bg-background px-3 text-center font-mono text-lg tracking-[.4em] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  inputMode="decimal"
-                  maxLength={4}
-                  value={dapAn.find((t) => t.cauHoiSnapshotId === c.snapshotId)?.dapAnChuoi ?? ""}
-                  onChange={(event) => set({
-                    cauHoiSnapshotId: c.snapshotId,
-                    chiTietThuTu: 0,
-                    dapAnChuoi: event.target.value.replace(/[^0-9,.-]/g, "").slice(0, 4),
-                  })}
-                />
-              </div>
-            )}
-          </article>
+          <CauHoiCard key={c.snapshotId} cauHoi={c} soThuTu={i + 1} dapAn={dapAn} onTraLoi={set} />
         );
       })}
 
@@ -486,6 +386,78 @@ export default function ExamClient({
     </div>
   );
 }
+
+const CauHoiCard = memo(function CauHoiCard({
+  cauHoi,
+  soThuTu,
+  dapAn,
+  onTraLoi,
+}: {
+  cauHoi: Cau;
+  soThuTu: number;
+  dapAn: TraLoiOffline[];
+  onTraLoi: (answer: TraLoiOffline) => void;
+}) {
+  const daTraLoi = cauHoi.phan === "I"
+    ? dapAn.some((t) => t.cauHoiSnapshotId === cauHoi.snapshotId && Boolean(t.dapAnLuaChonId))
+    : cauHoi.phan === "II"
+      ? cauHoi.chiTiet.every((x) => dapAn.some((t) => t.cauHoiSnapshotId === cauHoi.snapshotId && t.chiTietThuTu === x.thuTu && t.dapAnDungSai !== undefined))
+      : Boolean(dapAn.find((t) => t.cauHoiSnapshotId === cauHoi.snapshotId)?.dapAnChuoi);
+
+  return (
+    <article id={`cau-${soThuTu}`} className="scroll-mt-28 rounded-xl border border-border bg-card p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{soThuTu}</span>
+          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">Phần {cauHoi.phan}</span>
+        </div>
+        {daTraLoi && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-label="Đã trả lời" />}
+      </div>
+
+      <div className="rich-content" dangerouslySetInnerHTML={{ __html: cauHoi.noiDung }} />
+
+      {cauHoi.phan === "I" && (
+        <div className="mt-4 space-y-2">
+          {cauHoi.chiTiet.map((x, idx) => {
+            const checked = dapAn.some((t) => t.cauHoiSnapshotId === cauHoi.snapshotId && t.dapAnLuaChonId === x.id);
+            return <label key={x.id} className={cn("flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors", checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted")}>
+              <input data-testid={`answer-${cauHoi.snapshotId}-${x.thuTu}`} type="radio" name={cauHoi.snapshotId} className="mt-0.5 h-5 w-5 shrink-0 accent-primary" checked={checked} onChange={() => onTraLoi({ cauHoiSnapshotId: cauHoi.snapshotId, chiTietThuTu: 0, dapAnLuaChonId: x.id })} />
+              <span className="flex-1 pt-px"><span className="mr-1.5 font-medium text-muted-foreground">{String.fromCharCode(65 + idx)}.</span><span dangerouslySetInnerHTML={{ __html: x.noiDung }} /></span>
+            </label>;
+          })}
+        </div>
+      )}
+
+      {cauHoi.phan === "II" && (
+        <div className="mt-4 divide-y divide-border rounded-lg border border-border">
+          {cauHoi.chiTiet.map((x, idx) => <div key={x.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+            <span className="flex-1"><span className="mr-1.5 font-medium text-muted-foreground">{String.fromCharCode(97 + idx)})</span><span dangerouslySetInnerHTML={{ __html: x.noiDung }} /></span>
+            <div className="flex shrink-0 gap-2" role="group" aria-label={`Ý ${idx + 1}`}>
+              {[true, false].map((value) => {
+                const active = dapAn.some((t) => t.cauHoiSnapshotId === cauHoi.snapshotId && t.chiTietThuTu === x.thuTu && t.dapAnDungSai === value);
+                return <button key={String(value)} type="button" aria-pressed={active} className={cn("h-9 min-w-16 rounded-md border px-3 text-sm font-medium transition-colors", active ? value ? "border-emerald-600 bg-emerald-600 text-white" : "border-destructive bg-destructive text-destructive-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted")} onClick={() => onTraLoi({ cauHoiSnapshotId: cauHoi.snapshotId, chiTietThuTu: x.thuTu, dapAnDungSai: value })}>{value ? "Đúng" : "Sai"}</button>;
+              })}
+            </div>
+          </div>)}
+        </div>
+      )}
+
+      {cauHoi.phan === "III" && (
+        <div className="mt-4">
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Đáp số (tối đa 4 ký tự)</label>
+          <input className="h-11 w-40 rounded-lg border border-input bg-background px-3 text-center font-mono text-lg tracking-[.4em] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" inputMode="decimal" maxLength={4} value={dapAn.find((t) => t.cauHoiSnapshotId === cauHoi.snapshotId)?.dapAnChuoi ?? ""} onChange={(event) => onTraLoi({ cauHoiSnapshotId: cauHoi.snapshotId, chiTietThuTu: 0, dapAnChuoi: event.target.value.replace(/[^0-9,.-]/g, "").slice(0, 4) })} />
+        </div>
+      )}
+    </article>
+  );
+}, (truoc, sau) => {
+  if (truoc.cauHoi !== sau.cauHoi || truoc.soThuTu !== sau.soThuTu || truoc.onTraLoi !== sau.onTraLoi) return false;
+  const danhDapAn = (items: TraLoiOffline[]) => items
+    .filter((item) => item.cauHoiSnapshotId === truoc.cauHoi.snapshotId)
+    .map((item) => `${item.chiTietThuTu}:${item.dapAnLuaChonId ?? ""}:${item.dapAnDungSai ?? ""}:${item.dapAnChuoi ?? ""}`)
+    .join("|");
+  return danhDapAn(truoc.dapAn) === danhDapAn(sau.dapAn);
+});
 
 function TrangThaiDongBoIcon({ status }: { status: string }) {
   if (status.startsWith("Chưa lưu được")) return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
