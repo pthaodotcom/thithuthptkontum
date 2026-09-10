@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { kySessionJwt, xacMinhSessionJwt, type VaiTro } from "@/lib/auth/jwt";
 import { xacMinhMatKhau } from "@/lib/auth/password";
@@ -103,7 +104,7 @@ export async function dangNhap(maSo: string, matKhau: string): Promise<KetQuaDan
   return { thanhCong: true, phaiDoiMatKhau: taiKhoan.phai_doi_mat_khau };
 }
 
-export async function laySessionHienHanh() {
+export const laySessionHienHanh = cache(async function laySessionHienHanh() {
   const cookieStore = await cookies();
   const token = cookieStore.get(TEN_COOKIE_SESSION)?.value;
   if (!token) return null;
@@ -123,7 +124,7 @@ export async function laySessionHienHanh() {
   if (!data || data.phien_hien_hanh !== claims.session_id) return null;
 
   return claims;
-}
+});
 
 export async function dangXuat() {
   const cookieStore = await cookies();

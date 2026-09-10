@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   CheckCircle2,
@@ -44,6 +45,7 @@ export default function ExamClient({
   caThiMonId: string; baiLamId?: string; gioKetThuc?: string;
   cauHoi: Cau[]; banDau: TraLoiOffline[];
 }) {
+  const router = useRouter();
   const [dapAn, setDapAn] = useState<TraLoiOffline[]>(banDau);
   const [status, setStatus] = useState("Đã lưu");
   const [pending, setPending] = useState(0);
@@ -51,6 +53,8 @@ export default function ExamClient({
   const [warning, setWarning] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dangVaoThi, setDangVaoThi] = useState(false);
+  const [dangTaiLaiDe, startTransition] = useTransition();
   const hiddenAt = useRef<number | null>(null);
   const offlineAt = useRef<number | null>(null);
   const dapAnRef = useRef(dapAn);
@@ -234,23 +238,36 @@ export default function ExamClient({
   }
 
   if (!baiLamId) {
+    const dangMoDe = dangVaoThi || dangTaiLaiDe;
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
         <p className="text-muted-foreground">Bạn chưa vào ca thi này.</p>
         <Button
           size="lg"
+          disabled={dangMoDe}
           onClick={async () => {
-            const response = await fetch("/api/bai-thi/vao-thi", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ caThiMonId }),
-            });
-            const json = await response.json();
-            if (response.ok) location.reload();
-            else alert(json.message);
+            setDangVaoThi(true);
+            try {
+              const response = await fetch("/api/bai-thi/vao-thi", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ caThiMonId }),
+              });
+              const json = await response.json();
+              if (response.ok) {
+                startTransition(() => router.refresh());
+                return;
+              }
+              alert(json.message);
+            } catch {
+              alert("Chưa thể mở bài thi. Vui lòng thử lại.");
+            } finally {
+              setDangVaoThi(false);
+            }
           }}
         >
-          Vào thi
+          {dangMoDe && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {dangMoDe ? "Đang mở đề…" : "Vào thi"}
         </Button>
       </div>
     );

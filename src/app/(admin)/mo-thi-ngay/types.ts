@@ -1,25 +1,22 @@
-export type MonTrongCaBypass = {
-  caThiMonId: string;
-  monId: string;
+export type HocSinhDemo = {
+  baiLamId: string;
+  caThiId: string;
+  hoTen: string;
+  maSo: string;
+  tenLop: string;
   tenMon: string;
-  soHocSinh: number;
-  coDeTaiSuDung: boolean;
+  soThuTuCa: number;
+  trangThaiBai: string;
+  diemTong: number | null;
+  coEmail: boolean;
 };
 
 export type CaThiBypass = {
   caThiId: string;
-  dotThiId: string;
   soThuTuCa: number;
   gioBatDau: string;
   gioKetThuc: string;
-  trangThai: string;
-  override: {
-    trangThai: "VaoThi" | "SapDienRa";
-    gioBatDau: string;
-    gioKetThuc: string;
-  } | null;
-  cauHinhCuKhongDongNhat: boolean;
-  mons: MonTrongCaBypass[];
+  hocSinh: HocSinhDemo[];
 };
 
 export type DotThiBypass = {
@@ -29,18 +26,19 @@ export type DotThiBypass = {
   cacCa: CaThiBypass[];
 };
 
-export type KetQuaMoCaBypass = {
-  success: true;
-  data: {
-    tenDotThi: string;
-    soCaVaoThi: number;
-    soCaSapDienRa: number;
-    soCaTheoLichThat: number;
-    soMonDuocApDung: number;
-    soMonCoDeTaiSuDung: number;
-    soBaiDuocKhoiPhuc: number;
-    soBaiDuocMoKhoa: number;
-  };
-};
+export type TrangThaiBaiDemo =
+  | "ChuaVaoThi" | "DangLamBai" | "DaNopBai" | "ChoXuLy"
+  | "DangTaoNhanXet" | "DangGuiEmail" | "HoanTat" | "ThieuEmail"
+  | "ThatBaiTamThoi" | "CanXuLy";
 
-export type LoiMoCaBypass = { success: false; error: string };
+export type BaiTheoDoiDemo = HocSinhDemo & { trangThai: TrangThaiBaiDemo };
+
+export type LuotThiDemo = {
+  demoLuotThiId: string;
+  trangThai: "DangMo" | "DangXuLy" | "HoanTat" | "CanXuLy";
+  lyDo: string;
+  createdAt: string;
+  ketThucLuc: string | null;
+  cacBai: BaiTheoDoiDemo[];
+  soJobConLai: number;
+};

@@ -372,18 +372,17 @@ ws['!cols'] = [
 
 XLSX.utils.book_append_sheet(wb, ws, "CauHoi_276Cau_NganHang");
 
-const webappTarget = path.join(__dirname, '..', 'CauHoi_276Cau_NganHang.xlsx');
-const rootTarget = path.join(__dirname, '..', '..', 'CauHoi_276Cau_NganHang.xlsx');
-const csvTarget = path.join(__dirname, '..', 'CauHoiToanHoc.csv');
+const artifactDir = path.join(__dirname, '..', 'artifacts', 'reference-data');
+fs.mkdirSync(artifactDir, { recursive: true });
+const outputPath = path.join(artifactDir, 'CauHoi_276Cau_NganHang.xlsx');
+const csvTarget = path.join(artifactDir, 'CauHoiToanHoc.csv');
 
-XLSX.writeFile(wb, webappTarget);
-XLSX.writeFile(wb, rootTarget);
+XLSX.writeFile(wb, outputPath);
 
 // Tạo file CSV song song
 const csvContent = XLSX.utils.sheet_to_csv(ws);
 fs.writeFileSync(csvTarget, csvContent, 'utf-8');
 
 console.log(`Successfully generated 276 questions Excel & CSV files! Total questions: ${questions.length}`);
-console.log(`- Excel 1: ${webappTarget}`);
-console.log(`- Excel 2: ${rootTarget}`);
+console.log(`- Excel: ${outputPath}`);
 console.log(`- CSV: ${csvTarget}`);

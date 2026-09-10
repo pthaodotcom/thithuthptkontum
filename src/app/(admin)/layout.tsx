@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
+import { layThongBaoDashboard } from "@/lib/dashboard/data";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { demoBypassDangBat } from "@/lib/demo/bypass";
 import { DashboardShell, type DashboardNavGroup } from "@/components/dashboard/dashboard-shell";
@@ -72,18 +73,21 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect("/dang-nhap");
   }
   const supabase = taoSupabaseServiceRole();
-  const { data: taiKhoan } = await supabase
-    .from("tai_khoan")
-    .select("ho_ten")
-    .eq("tai_khoan_id", session.sub)
-    .maybeSingle();
+  const [{ data: taiKhoan }, notifications] = await Promise.all([
+    supabase
+      .from("tai_khoan")
+      .select("ho_ten")
+      .eq("tai_khoan_id", session.sub)
+      .maybeSingle(),
+    layThongBaoDashboard(session.sub),
+  ]);
 
   return (
     <DashboardShell
       brandLabel="Thi thử THPT"
       brandSub="Quản trị viên"
       navGroups={navGroups}
-      userId={session.sub}
+      notifications={notifications}
       userName={taiKhoan?.ho_ten ?? "Quản trị viên"}
       userRole="Quản trị viên"
     >

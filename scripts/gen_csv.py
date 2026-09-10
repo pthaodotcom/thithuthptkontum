@@ -1,5 +1,6 @@
 import csv
 import io
+from pathlib import Path
 
 chapters = [
     {
@@ -152,7 +153,9 @@ chapters = [
 
 headers = ["Phan", "ChuyenDe", "BaiHoc", "MucDo", "NoiDung", "DapAn1", "DapAn2", "DapAn3", "DapAn4", "DapAnDung"]
 
-with open(r'd:\Download\notebooklm-mcp-main\skill-for-ba-final\du-an-thi-thu-thpt\webapp\CauHoiToanHoc.csv', 'w', newline='', encoding='utf-8-sig') as f:
+artifact_dir = Path(__file__).resolve().parents[1] / "artifacts" / "reference-data"
+artifact_dir.mkdir(parents=True, exist_ok=True)
+with open(artifact_dir / "CauHoiToanHoc.csv", 'w', newline='', encoding='utf-8-sig') as f:
     writer = csv.writer(f)
     writer.writerow(headers)
     for chap in chapters:

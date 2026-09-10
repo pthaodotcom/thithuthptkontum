@@ -4,289 +4,189 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
-import { demoBypassDangBat } from "@/lib/demo/bypass";
+import { demoBypassDangBat, phanLoaiBaiLamKetThucDemo } from "@/lib/demo/bypass";
+import { capNhatTrangThaiLuotDemo, xuLyMotJob, type JobHangDoi } from "@/lib/job/xu-ly-mot-job";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
-import type { KetQuaMoCaBypass, LoiMoCaBypass } from "./types";
+import type { LuotThiDemo, TrangThaiBaiDemo } from "./types";
 
-const cauHinhCaSchema = z.object({
-  caThiId: z.string().uuid(),
-  trangThai: z.enum(["MacDinh", "VaoThi", "SapDienRa"]),
-  gioBatDau: z.string().datetime().nullable(),
-  gioKetThuc: z.string().datetime().nullable(),
-});
-
-const schema = z.object({
+const taoSchema = z.object({
   dotThiId: z.string().uuid(),
-  cauHinhCa: z.array(cauHinhCaSchema).min(1).max(20),
+  baiLamIds: z.array(z.string().uuid()).min(1).max(200).refine((ids) => new Set(ids).size === ids.length),
+  trangThaiHienThi: z.enum(["VaoThi", "SapDienRa"]),
+  gioBatDau: z.string().datetime(),
+  gioKetThuc: z.string().datetime(),
   lyDo: z.string().trim().min(5).max(500),
   daXacNhan: z.literal(true),
-}).superRefine((value, context) => {
-  const ids = value.cauHinhCa.map((item) => item.caThiId);
-  if (new Set(ids).size !== ids.length) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["cauHinhCa"], message: "Ca thi bị trùng." });
-  }
-  for (const [index, item] of value.cauHinhCa.entries()) {
-    if (item.trangThai === "MacDinh") continue;
-    const batDau = item.gioBatDau ? new Date(item.gioBatDau) : null;
-    const ketThuc = item.gioKetThuc ? new Date(item.gioKetThuc) : null;
-    if (!batDau || !ketThuc || Number.isNaN(batDau.getTime()) || Number.isNaN(ketThuc.getTime()) || ketThuc <= batDau) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["cauHinhCa", index, "gioKetThuc"],
-        message: "Giờ kết thúc phải sau giờ bắt đầu.",
-      });
-    }
-  }
-});
+}).refine((x) => new Date(x.gioKetThuc) > new Date(x.gioBatDau), { message: "Giờ kết thúc phải sau giờ bắt đầu." });
 
-type MonRow = {
-  id: string;
-  caThiId: string;
-  monId: string;
-  tenMon: string;
-};
-
-type CaRow = {
-  ca_thi_id: string;
-  dot_thi_id: string;
-  so_thu_tu_ca: number;
-  ca_thi_mon: Array<{
-    id: string;
-    mon_id: string;
-    mon: { ten_mon: string } | Array<{ ten_mon: string }> | null;
-  }>;
-};
-
-function loiChung(message?: string) {
-  if (message?.includes("demo_bypass_ca_thi_mon")) {
-    return "Chưa cài đặt bảng cấu hình demo. Vui lòng chạy migration 0038 trước.";
-  }
-  return "Chưa áp dụng được lịch demo. Vui lòng tải lại và thử lại.";
+function loi(message: string) { return { success: false as const, error: message }; }
+async function admin() {
+  if (!demoBypassDangBat()) return null;
+  const session = await laySessionHienHanh();
+  return session?.vai_tro === "Admin" ? session : null;
 }
 
-export async function moCaThiNgay(
-  input: z.input<typeof schema>
-): Promise<KetQuaMoCaBypass | LoiMoCaBypass> {
-  if (!demoBypassDangBat()) {
-    return { success: false, error: "Chế độ demo đang tắt. Công cụ này không có trong bản release chính thức." };
-  }
-
-  const session = await laySessionHienHanh();
-  if (!session || session.vai_tro !== "Admin") {
-    return { success: false, error: "Chỉ Quản trị viên mới được dùng công cụ demo này." };
-  }
-
-  const parsed = schema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: "Vui lòng kiểm tra trạng thái, giờ thi và xác nhận thao tác." };
-  }
-
+export async function taoLuotThiDemo(input: z.input<typeof taoSchema>) {
+  const session = await admin();
+  if (!session) return loi("Chỉ Quản trị viên được dùng công cụ demo khi chế độ này được bật.");
+  const parsed = taoSchema.safeParse(input);
+  if (!parsed.success) return loi("Dữ liệu tạo lượt demo chưa hợp lệ.");
   const supabase = taoSupabaseServiceRole();
-  const caIds = parsed.data.cauHinhCa.map((item) => item.caThiId);
-  const { data: caRowsRaw, error: caError } = await supabase
-    .from("ca_thi")
-    .select("ca_thi_id,dot_thi_id,so_thu_tu_ca,ca_thi_mon(id,mon_id,mon(ten_mon))")
-    .in("ca_thi_id", caIds);
-  if (caError) return { success: false, error: loiChung(caError.message) };
-
-  const caRows = (caRowsRaw ?? []) as CaRow[];
-  if (
-    caRows.length !== caIds.length ||
-    caRows.some((ca) => ca.dot_thi_id !== parsed.data.dotThiId || ca.so_thu_tu_ca < 2 || ca.so_thu_tu_ca > 4)
-  ) {
-    return { success: false, error: "Chỉ Ca 2, Ca 3 và Ca 4 của đúng đợt thi mới được cấu hình demo." };
-  }
-
-  const monRows: MonRow[] = caRows.flatMap((ca) =>
-    (ca.ca_thi_mon ?? []).map((row) => {
-      const mon = Array.isArray(row.mon) ? row.mon[0] : row.mon;
-      return {
-        id: row.id,
-        caThiId: ca.ca_thi_id,
-        monId: row.mon_id,
-        tenMon: mon?.ten_mon ?? "Môn chưa xác định",
-      };
-    })
-  );
-  if (!monRows.length) return { success: false, error: "Các ca đã chọn chưa có môn thi." };
-
-  const cauHinhTheoCa = new Map(parsed.data.cauHinhCa.map((item) => [item.caThiId, item]));
-  const caCoOverride = caRows.filter((ca) => cauHinhTheoCa.get(ca.ca_thi_id)?.trangThai !== "MacDinh");
-  const caVaoThi = caRows.filter((ca) => cauHinhTheoCa.get(ca.ca_thi_id)?.trangThai === "VaoThi");
-  const caSapDienRa = caRows.filter((ca) => cauHinhTheoCa.get(ca.ca_thi_id)?.trangThai === "SapDienRa");
-  const caMacDinh = caRows.filter((ca) => cauHinhTheoCa.get(ca.ca_thi_id)?.trangThai === "MacDinh");
-  const idsCaCoOverride = new Set(caCoOverride.map((ca) => ca.ca_thi_id));
-  const idsCaVaoThi = new Set(caVaoThi.map((ca) => ca.ca_thi_id));
-  const idsCaMacDinh = new Set(caMacDinh.map((ca) => ca.ca_thi_id));
-  const monCoOverride = monRows.filter((row) => idsCaCoOverride.has(row.caThiId));
-  const monVaoThi = monRows.filter((row) => idsCaVaoThi.has(row.caThiId));
-  const monMacDinh = monRows.filter((row) => idsCaMacDinh.has(row.caThiId));
-  const caThiMonIds = monRows.map((row) => row.id);
-
-  const { data: baiLamRows, error: baiLamError } = await supabase
+  const { data: baiLam, error } = await supabase
     .from("bai_lam_thi")
-    .select("bai_lam_id,ca_thi_mon_id,trang_thai")
-    .in("ca_thi_mon_id", caThiMonIds);
-  if (baiLamError) return { success: false, error: loiChung(baiLamError.message) };
-
-  const monTheoId = new Map(monRows.map((row) => [row.id, row]));
-  const caDangCoNguoiThi = new Set(
-    (baiLamRows ?? [])
-      .filter((row) => row.trang_thai === "DangThi")
-      .map((row) => monTheoId.get(row.ca_thi_mon_id)?.caThiId)
-      .filter((id): id is string => Boolean(id))
-  );
-  const caBiLuiLich = caSapDienRa.filter((ca) => caDangCoNguoiThi.has(ca.ca_thi_id));
-  if (caBiLuiLich.length) {
-    return {
-      success: false,
-      error: `Không thể chuyển sang “Sắp diễn ra” vì đang có học sinh làm bài ở ${caBiLuiLich.map((ca) => `Ca ${ca.so_thu_tu_ca}`).join(", ")}.`,
-    };
-  }
-
-  const monIdCanKiemTraDe = [...new Set(monCoOverride.map((row) => row.monId))];
-  const monIdCoDeTaiSuDung = new Set<string>();
-  if (monIdCanKiemTraDe.length) {
-    const { data: deRows, error: deError } = await supabase
-      .from("de_thi")
-      .select("de_thi_id,ma_de(ma_de_id),ca_thi_mon!inner(mon_id)")
-      .in("ca_thi_mon.mon_id", monIdCanKiemTraDe)
-      .in("trang_thai", ["DaGiaoChuaBatDau", "DangThi", "DaThiXong"]);
-    if (deError) return { success: false, error: loiChung(deError.message) };
-    for (const de of deRows ?? []) {
-      const ctm = Array.isArray(de.ca_thi_mon) ? de.ca_thi_mon[0] : de.ca_thi_mon;
-      if (ctm?.mon_id && (de.ma_de?.length ?? 0) > 0) monIdCoDeTaiSuDung.add(ctm.mon_id);
-    }
-    const thieuDe = monVaoThi.filter((row) => !monIdCoDeTaiSuDung.has(row.monId));
-    if (thieuDe.length) {
-      return {
-        success: false,
-        error: `Chưa thể mở ca vì chưa có đề đã giao để dùng lại cho: ${[...new Set(thieuDe.map((row) => row.tenMon))].join(", ")}.`,
-      };
-    }
-  }
-
-  const overrideRows = monCoOverride.map((row) => {
-    const item = cauHinhTheoCa.get(row.caThiId)!;
-    return {
-      ca_thi_mon_id: row.id,
-      trang_thai: item.trangThai,
-      gio_bat_dau: item.gioBatDau,
-      gio_ket_thuc: item.gioKetThuc,
-      ly_do: parsed.data.lyDo,
-      nguoi_cap_nhat_tai_khoan_id: session.sub,
-      updated_at: new Date().toISOString(),
-    };
+    .select("bai_lam_id,trang_thai,ca_thi_mon!inner(ca_thi!inner(dot_thi_id))")
+    .in("bai_lam_id", parsed.data.baiLamIds);
+  if (error || (baiLam?.length ?? 0) !== parsed.data.baiLamIds.length) return loi("Không tìm đủ bài làm đã chọn.");
+  const thuocDot = (baiLam ?? []).every((bai) => {
+    const ctm = Array.isArray(bai.ca_thi_mon) ? bai.ca_thi_mon[0] : bai.ca_thi_mon;
+    const ca = Array.isArray(ctm?.ca_thi) ? ctm.ca_thi[0] : ctm?.ca_thi;
+    return ca?.dot_thi_id === parsed.data.dotThiId;
   });
-  if (overrideRows.length) {
-    const { error } = await supabase
-      .from("demo_bypass_ca_thi_mon")
-      .upsert(overrideRows, { onConflict: "ca_thi_mon_id" });
-    if (error) return { success: false, error: loiChung(error.message) };
+  if (!thuocDot) return loi("Mọi bài làm phải thuộc đúng đợt thi đã chọn.");
+  const hopLe = new Set(["ChuaDangNhap", "VangMat", "BiKhoaChoXuLy"]);
+  if ((baiLam ?? []).some((bai) => !hopLe.has(bai.trang_thai))) return loi("Chỉ được chọn bài chưa vào thi hoặc bài bị khóa/vắng mặt để chạy demo.");
+  const { data: emailDaGui } = await supabase.from("email_log").select("bai_lam_id").in("bai_lam_id", parsed.data.baiLamIds).eq("trang_thai", "DaGui");
+  if (emailDaGui?.length) return loi("Không thể tạo lại demo cho bài đã gửi email kết quả.");
+
+  const { data: luot, error: loiTao } = await supabase.from("demo_luot_thi").insert({
+    dot_thi_id: parsed.data.dotThiId, ly_do: parsed.data.lyDo, nguoi_tao_tai_khoan_id: session.sub,
+  }).select("demo_luot_thi_id").single();
+  if (loiTao || !luot) return loi(loiTao?.code === "23505" ? "Đang có một lượt demo khác hoạt động." : "Không tạo được lượt demo.");
+  const { error: loiGan } = await supabase.from("demo_luot_thi_bai_lam").insert(parsed.data.baiLamIds.map((baiLamId) => ({
+    demo_luot_thi_id: luot.demo_luot_thi_id, bai_lam_id: baiLamId, trang_thai_hien_thi: parsed.data.trangThaiHienThi,
+    gio_bat_dau: parsed.data.gioBatDau, gio_ket_thuc: parsed.data.gioKetThuc,
+  })));
+  if (loiGan) {
+    await supabase.from("demo_luot_thi").delete().eq("demo_luot_thi_id", luot.demo_luot_thi_id);
+    return loi("Không gán được danh sách học sinh vào lượt demo.");
   }
-  if (monMacDinh.length) {
-    const { error } = await supabase
-      .from("demo_bypass_ca_thi_mon")
+  await supabase.from("bai_lam_thi").update({ trang_thai: "ChuaDangNhap", de_thi_id: null, ma_de_id: null, thoi_diem_vao_thi: null, thoi_diem_nop: null, diem_tong: null, so_cau_dung: null, so_cau_sai: null, thu_tu_hien_thi: [] }).in("bai_lam_id", parsed.data.baiLamIds).in("trang_thai", ["VangMat", "BiKhoaChoXuLy"]);
+  await supabase.from("audit_log").insert({
+    hanh_dong: "TaoLuotThiDemo", doi_tuong: "DemoLuotThi", doi_tuong_id: luot.demo_luot_thi_id,
+    nguoi_thuc_hien_tai_khoan_id: session.sub, du_lieu: { dot_thi_id: parsed.data.dotThiId, bai_lam_ids: parsed.data.baiLamIds, ly_do: parsed.data.lyDo },
+  });
+  revalidatePath("/mo-thi-ngay"); revalidatePath("/ho-so");
+  return { success: true as const, demoLuotThiId: luot.demo_luot_thi_id, soHocSinh: parsed.data.baiLamIds.length };
+}
+
+export async function ketThucLuotDemo(input: { demoLuotThiId: string }) {
+  const session = await admin();
+  if (!session || !z.string().uuid().safeParse(input.demoLuotThiId).success) return loi("Không có quyền hoặc lượt demo không hợp lệ.");
+  const supabase = taoSupabaseServiceRole();
+  const { data: luot } = await supabase.from("demo_luot_thi").select("trang_thai").eq("demo_luot_thi_id", input.demoLuotThiId).maybeSingle();
+  if (luot?.trang_thai !== "DangMo") return loi("Lượt demo không còn ở trạng thái đang mở.");
+  const { data: bai } = await supabase.from("demo_luot_thi_bai_lam").select("bai_lam_id,bai_lam_thi!inner(trang_thai,diem_tong)").eq("demo_luot_thi_id", input.demoLuotThiId);
+  const danhSach = (bai ?? []).map((x) => {
+    const bl = Array.isArray(x.bai_lam_thi) ? x.bai_lam_thi[0] : x.bai_lam_thi;
+    return { bai_lam_id: x.bai_lam_id, trang_thai: bl?.trang_thai ?? "", diem_tong: bl?.diem_tong ?? null };
+  });
+  const { idsDuocXuLy, idsChuaNop } = phanLoaiBaiLamKetThucDemo(danhSach);
+
+  // Nếu không có bài nào đã nộp có điểm: gỡ toàn bộ khỏi demo và đóng lượt demo sang Hoàn tất
+  if (!idsDuocXuLy.length) {
+    if (idsChuaNop.length) {
+      const { error: loiGo } = await supabase
+        .from("demo_luot_thi_bai_lam")
+        .delete()
+        .eq("demo_luot_thi_id", input.demoLuotThiId);
+      if (loiGo) return loi("Không thể gỡ các bài làm khỏi lượt demo: " + loiGo.message);
+    }
+    const { error: loiDong } = await supabase
+      .from("demo_luot_thi")
+      .update({ trang_thai: "HoanTat", ket_thuc_luc: new Date().toISOString() })
+      .eq("demo_luot_thi_id", input.demoLuotThiId);
+    if (loiDong) return loi("Không thể đóng lượt demo: " + loiDong.message);
+
+    await supabase.from("audit_log").insert({
+      hanh_dong: "KetThucLuotThiDemo",
+      doi_tuong: "DemoLuotThi",
+      doi_tuong_id: input.demoLuotThiId,
+      nguoi_thuc_hien_tai_khoan_id: session.sub,
+      du_lieu: { bai_lam_ids_xu_ly: [], bai_lam_ids_khong_xu_ly: idsChuaNop, ly_do: "KetThucSomKhongCoBaiNop" },
+    });
+    revalidatePath("/mo-thi-ngay");
+    return { success: true as const, soHocSinh: 0, soBaiKhongXuLy: idsChuaNop.length };
+  }
+
+  // Có ít nhất 1 bài đã nộp: gỡ bài chưa nộp và chuyển sang phân tích/Gemini/email
+  if (idsChuaNop.length) {
+    const { error: loiGo } = await supabase
+      .from("demo_luot_thi_bai_lam")
       .delete()
-      .in("ca_thi_mon_id", monMacDinh.map((row) => row.id));
-    if (error) return { success: false, error: loiChung(error.message) };
+      .eq("demo_luot_thi_id", input.demoLuotThiId)
+      .in("bai_lam_id", idsChuaNop);
+    if (loiGo) return loi("Không thể gỡ các bài chưa nộp khỏi lượt demo: " + loiGo.message);
   }
-
-  const idsCanKhoiPhuc = monCoOverride.map((row) => row.id);
-  const trangThaiCanKhoiPhuc = ["VangMat", "BiKhoaChoXuLy", "KhongTheDuThi_LoiToChuc"];
-  const soBaiDuocKhoiPhuc = (baiLamRows ?? []).filter(
-    (row) => idsCanKhoiPhuc.includes(row.ca_thi_mon_id) && trangThaiCanKhoiPhuc.includes(row.trang_thai)
-  ).length;
-  if (idsCanKhoiPhuc.length) {
-    const { error } = await supabase
-      .from("bai_lam_thi")
-      .update({
-        trang_thai: "ChuaDangNhap",
-        de_thi_id: null,
-        ma_de_id: null,
-        thoi_diem_vao_thi: null,
-        thoi_diem_nop: null,
-        diem_tong: null,
-        so_cau_dung: null,
-        so_cau_sai: null,
-        thu_tu_hien_thi: [],
-      })
-      .in("ca_thi_mon_id", idsCanKhoiPhuc)
-      .in("trang_thai", trangThaiCanKhoiPhuc);
-    if (error) return { success: false, error: loiChung(error.message) };
-  }
-
-  let soBaiDuocMoKhoa = 0;
-  if (monVaoThi.length) {
-    const monVaoThiIds = monVaoThi.map((row) => row.id);
-    const { data: baiChoVaoThi, error: baiChoError } = await supabase
-      .from("bai_lam_thi")
-      .select("bai_lam_id")
-      .in("ca_thi_mon_id", monVaoThiIds)
-      .eq("trang_thai", "ChuaDangNhap");
-    if (baiChoError) return { success: false, error: loiChung(baiChoError.message) };
-
-    const baiLamIds = (baiChoVaoThi ?? []).map((row) => row.bai_lam_id);
-    if (baiLamIds.length) {
-      const { data: logDaCo, error: logCheckError } = await supabase
-        .from("log_xu_ly_ngoai_le")
-        .select("bai_lam_id")
-        .eq("loai_xu_ly", "MoKhoaVaoTre")
-        .in("bai_lam_id", baiLamIds);
-      if (logCheckError) return { success: false, error: loiChung(logCheckError.message) };
-      const daMo = new Set((logDaCo ?? []).map((row) => row.bai_lam_id));
-      const canMo = baiLamIds.filter((id) => !daMo.has(id));
-      if (canMo.length) {
-        const { error } = await supabase.from("log_xu_ly_ngoai_le").insert(
-          canMo.map((baiLamId) => ({
-            bai_lam_id: baiLamId,
-            loai_xu_ly: "MoKhoaVaoTre",
-            nguoi_thuc_hien_tai_khoan_id: session.sub,
-            ly_do: parsed.data.lyDo,
-          }))
-        );
-        if (error) return { success: false, error: loiChung(error.message) };
-        soBaiDuocMoKhoa = canMo.length;
-      }
-    }
-  }
-
-  const { data: dotThi } = await supabase
-    .from("dot_thi")
-    .select("ten_dot_thi")
-    .eq("dot_thi_id", parsed.data.dotThiId)
-    .maybeSingle();
-  const { error: auditError } = await supabase.from("audit_log").insert({
-    hanh_dong: "CauHinhCaThiDemoBypass",
-    doi_tuong: "DotThi",
-    doi_tuong_id: parsed.data.dotThiId,
-    nguoi_thuc_hien_tai_khoan_id: session.sub,
-    du_lieu: {
-      ly_do: parsed.data.lyDo,
-      ca_vao_thi: caVaoThi.map((ca) => ca.so_thu_tu_ca),
-      ca_sap_dien_ra: caSapDienRa.map((ca) => ca.so_thu_tu_ca),
-      ca_theo_lich_that: caMacDinh.map((ca) => ca.so_thu_tu_ca),
-      cho_phep_tai_su_dung_de: true,
-      so_bai_khoi_phuc: soBaiDuocKhoiPhuc,
-      so_bai_mo_khoa_moi: soBaiDuocMoKhoa,
-    },
-  });
-  if (auditError) return { success: false, error: "Lịch demo đã áp dụng nhưng chưa ghi được lịch sử thay đổi." };
-
+  const { error: loiChuyen } = await supabase.from("demo_luot_thi").update({ trang_thai: "DangXuLy" }).eq("demo_luot_thi_id", input.demoLuotThiId).eq("trang_thai", "DangMo");
+  if (loiChuyen) return loi("Không thể chuyển lượt demo sang xử lý.");
+  const { error: loiPhanTich } = await supabase.rpc("phan_tich_ket_qua_cac_bai", { p_bai_lam_ids: idsDuocXuLy, p_demo_luot_thi_id: input.demoLuotThiId });
+  if (loiPhanTich) { await supabase.from("demo_luot_thi").update({ trang_thai: "CanXuLy" }).eq("demo_luot_thi_id", input.demoLuotThiId); return loi("Không tạo được hàng đợi phân tích: " + loiPhanTich.message); }
+  await supabase.from("audit_log").insert({ hanh_dong: "KetThucLuotThiDemo", doi_tuong: "DemoLuotThi", doi_tuong_id: input.demoLuotThiId, nguoi_thuc_hien_tai_khoan_id: session.sub, du_lieu: { bai_lam_ids_xu_ly: idsDuocXuLy, bai_lam_ids_khong_xu_ly: idsChuaNop } });
   revalidatePath("/mo-thi-ngay");
-  revalidatePath("/ho-so");
-  revalidatePath("/ky-thi");
-  return {
-    success: true,
-    data: {
-      tenDotThi: dotThi?.ten_dot_thi ?? "Đợt thi",
-      soCaVaoThi: caVaoThi.length,
-      soCaSapDienRa: caSapDienRa.length,
-      soCaTheoLichThat: caMacDinh.length,
-      soMonDuocApDung: monCoOverride.length,
-      soMonCoDeTaiSuDung: monVaoThi.filter((row) => monIdCoDeTaiSuDung.has(row.monId)).length,
-      soBaiDuocKhoiPhuc,
-      soBaiDuocMoKhoa,
-    },
-  };
+  return { success: true as const, soHocSinh: idsDuocXuLy.length, soBaiKhongXuLy: idsChuaNop.length };
+}
+
+export async function xuLyJobDemo(input: { demoLuotThiId: string }) {
+  const session = await admin();
+  if (!session || !z.string().uuid().safeParse(input.demoLuotThiId).success) return loi("Không có quyền hoặc lượt demo không hợp lệ.");
+  const supabase = taoSupabaseServiceRole();
+  const { data: luot } = await supabase.from("demo_luot_thi").select("trang_thai").eq("demo_luot_thi_id", input.demoLuotThiId).maybeSingle();
+  if (luot?.trang_thai !== "DangXuLy") return loi("Lượt demo không ở trạng thái xử lý.");
+  const { data, error } = await supabase.rpc("nhan_job_demo", { p_demo_luot_thi_id: input.demoLuotThiId });
+  if (error) return loi("Không nhận được job demo: " + error.message);
+  const job = data?.[0] as JobHangDoi | undefined;
+  if (job) {
+    try { await xuLyMotJob(supabase, job); } catch { /* trang thai loi da duoc xuLyMotJob luu */ }
+  } else await capNhatTrangThaiLuotDemo(supabase, input.demoLuotThiId);
+  const status = await layTrangThaiLuotDemo(input);
+  return status.success ? { success: true as const, coJobXuLy: Boolean(job), trangThaiLuotDemo: status.data.trangThai, soJobConLai: status.data.soJobConLai } : status;
+}
+
+function suyRaTrangThai(bai: { trang_thai: string; diem_tong: number | null }, jobs: Array<{ loai_job: string; trang_thai: string }>, email: { trang_thai: string } | null): TrangThaiBaiDemo {
+  if (bai.trang_thai !== "DaNopBai" || bai.diem_tong === null) return bai.trang_thai === "DangThi" ? "DangLamBai" : "ChuaVaoThi";
+  if (email?.trang_thai === "DaGui" || email?.trang_thai === "KhongGui_ThieuEmail") return email.trang_thai === "DaGui" ? "HoanTat" : "ThieuEmail";
+  if (jobs.some((j) => j.trang_thai === "ThatBai")) return "CanXuLy";
+  if (jobs.some((j) => j.loai_job === "demo_email" && j.trang_thai === "DangXuLy")) return "DangGuiEmail";
+  if (jobs.some((j) => j.loai_job === "demo_ai" && ["ChoXuLy", "DangXuLy"].includes(j.trang_thai))) return "DangTaoNhanXet";
+  return "ChoXuLy";
+}
+
+export async function layTrangThaiLuotDemo(input: { demoLuotThiId: string }): Promise<{ success: true; data: LuotThiDemo } | { success: false; error: string }> {
+  const session = await admin();
+  if (!session || !z.string().uuid().safeParse(input.demoLuotThiId).success) return loi("Không có quyền hoặc lượt demo không hợp lệ.");
+  const supabase = taoSupabaseServiceRole();
+  const { data: luot } = await supabase.from("demo_luot_thi").select("demo_luot_thi_id,trang_thai,ly_do,created_at,ket_thuc_luc").eq("demo_luot_thi_id", input.demoLuotThiId).maybeSingle();
+  if (!luot) return loi("Không tìm thấy lượt demo.");
+  const { data: dong } = await supabase.from("demo_luot_thi_bai_lam").select("bai_lam_id,bai_lam_thi!inner(bai_lam_id,trang_thai,diem_tong,hoc_sinh_tai_khoan_id,tai_khoan!bai_lam_thi_hoc_sinh_tai_khoan_id_fkey(ho_ten,ma_so,email_phu_huynh,lop:lop_id(ten_lop)),ca_thi_mon!inner(mon(ten_mon),ca_thi!inner(ca_thi_id,so_thu_tu_ca)))").eq("demo_luot_thi_id", input.demoLuotThiId);
+  const ids = (dong ?? []).map((x) => x.bai_lam_id);
+  const [{ data: jobs }, { data: emails }, { count: soJobConLai }] = await Promise.all([
+    supabase.from("job_hang_doi").select("tham_chieu_id,loai_job,trang_thai").eq("demo_luot_thi_id", input.demoLuotThiId),
+    ids.length ? supabase.from("email_log").select("bai_lam_id,trang_thai").in("bai_lam_id", ids) : Promise.resolve({ data: [] }),
+    supabase.from("job_hang_doi").select("id", { count: "exact", head: true }).eq("demo_luot_thi_id", input.demoLuotThiId).in("trang_thai", ["ChoXuLy", "DangXuLy"]),
+  ]);
+  const jobTheoBai = new Map<string, Array<{ loai_job: string; trang_thai: string }>>();
+  for (const job of jobs ?? []) jobTheoBai.set(job.tham_chieu_id, [...(jobTheoBai.get(job.tham_chieu_id) ?? []), job]);
+  const emailTheoBai = new Map((emails ?? []).map((x) => [x.bai_lam_id, x]));
+  const cacBai = (dong ?? []).map((row) => {
+    const bl = Array.isArray(row.bai_lam_thi) ? row.bai_lam_thi[0] : row.bai_lam_thi;
+    const tk = Array.isArray(bl?.tai_khoan) ? bl?.tai_khoan[0] : bl?.tai_khoan;
+    const lop = Array.isArray(tk?.lop) ? tk?.lop[0] : tk?.lop;
+    const ctm = Array.isArray(bl?.ca_thi_mon) ? bl?.ca_thi_mon[0] : bl?.ca_thi_mon;
+    const mon = Array.isArray(ctm?.mon) ? ctm?.mon[0] : ctm?.mon;
+    const ca = Array.isArray(ctm?.ca_thi) ? ctm?.ca_thi[0] : ctm?.ca_thi;
+    const bai = { trang_thai: bl?.trang_thai ?? "ChuaDangNhap", diem_tong: bl?.diem_tong ?? null };
+    return { baiLamId: row.bai_lam_id, caThiId: ca?.ca_thi_id ?? "", hoTen: tk?.ho_ten ?? "Học sinh", maSo: tk?.ma_so ?? "", tenLop: lop?.ten_lop ?? "", tenMon: mon?.ten_mon ?? "", soThuTuCa: ca?.so_thu_tu_ca ?? 0, trangThaiBai: bai.trang_thai, diemTong: bai.diem_tong === null ? null : Number(bai.diem_tong), coEmail: Boolean(tk?.email_phu_huynh), trangThai: suyRaTrangThai(bai, jobTheoBai.get(row.bai_lam_id) ?? [], emailTheoBai.get(row.bai_lam_id) ?? null) };
+  });
+  return { success: true, data: { demoLuotThiId: luot.demo_luot_thi_id, trangThai: luot.trang_thai as LuotThiDemo["trangThai"], lyDo: luot.ly_do, createdAt: luot.created_at, ketThucLuc: luot.ket_thuc_luc, cacBai, soJobConLai: soJobConLai ?? 0 } };
+}
+
+/** Chi dọn dữ liệu bypass theo ca của phiên bản cũ; luot demo moi khong bi xoa. */
+export async function ngungBypass() {
+  const session = await admin();
+  if (!session) return loi("Chỉ Quản trị viên mới được thực hiện.");
+  const supabase = taoSupabaseServiceRole();
+  const { count } = await supabase.from("demo_bypass_ca_thi_mon").select("ca_thi_mon_id", { count: "exact", head: true });
+  const { error } = await supabase.from("demo_bypass_ca_thi_mon").delete().neq("ca_thi_mon_id", "00000000-0000-0000-0000-000000000000");
+  if (error) return loi("Không dọn được cấu hình bypass cũ.");
+  return { success: true as const, soLuongXoa: count ?? 0 };
 }

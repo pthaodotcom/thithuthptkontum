@@ -1,9 +1,9 @@
 # Webapp — Hệ thống Thi thử Trực tuyến cấp Trường THPT
 
 Scaffold ban đầu (Next.js + Supabase + Gemini). Xem:
-- `../ke-hoach-trien-khai-webapp.md` — roadmap đầy đủ, kiến trúc, lý do chọn công nghệ.
+- `docs/legacy/ke-hoach-trien-khai-webapp.md` — roadmap đầy đủ, kiến trúc, lý do chọn công nghệ.
 - `CLAUDE.md` — rule bắt buộc khi code trong thư mục này.
-- `../3.2_Khung_yeu_cau_chuc_nang.md` + `../use-case-v3/` — nguồn nghiệp vụ gốc.
+- `docs/legacy/3.2_Khung_yeu_cau_chuc_nang.md` + `../use-case-v3/` — nguồn nghiệp vụ gốc.
 
 ## 1. Tạo tài khoản & project (làm 1 lần)
 
@@ -70,3 +70,13 @@ npm run supabase:types
 Phase 0-5 đã có triển khai chức năng: auth/RLS, danh mục và người dùng, ngân hàng câu hỏi/đề thi, đợt và ca thi, làm bài/giám sát, báo cáo PDF/Excel, nhận xét Gemini có fallback và email stub. Phase 6 đang tiếp tục với kiểm thử tích hợp, E2E, tải và rà soát bảo mật trên project Supabase dev.
 
 Khi không cấu hình `GEMINI_API_KEY` hoặc API tạm thời lỗi, hàng đợi thử lại tối đa 3 lần rồi sinh nhận xét mẫu; vì vậy có thể tiếp tục kiểm thử toàn bộ luồng mà không lưu key trong repo.
+
+### Phát hiện câu hỏi trùng
+
+Chức năng phát hiện trùng không gọi Gemini hoặc dịch vụ AI. Migration `0040_question_duplicate_detection.sql` dùng SHA-256 và PostgreSQL `pg_trgm`; câu Toán chỉ thay số được gắn nhãn “Cùng dạng – khác số” thay vì tự động coi là trùng.
+
+- `QUESTION_TEXT_SIMILARITY_THRESHOLD`: ngưỡng cảnh báo gần giống nội dung, mặc định thử nghiệm `0.72`.
+- `QUESTION_TEMPLATE_SIMILARITY_THRESHOLD`: ngưỡng cảnh báo cùng mẫu câu, mặc định thử nghiệm `0.84`.
+- Sau khi chạy migration, chạy `npm.cmd run fingerprints:backfill` để tạo dấu vân cho câu hỏi cũ.
+
+Hai ngưỡng trên chỉ phục vụ cảnh báo và cần hiệu chỉnh bằng tập câu hỏi đã được giáo viên gán nhãn. Tổ trưởng vẫn là người xác nhận cuối cùng; hệ thống không tự động xóa hoặc từ chối câu hỏi gần giống.

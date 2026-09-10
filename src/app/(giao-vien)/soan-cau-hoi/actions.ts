@@ -7,10 +7,18 @@ import { z } from "zod";
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { cauHoiSchema, tachDapAnPhan2, type DuLieuCauHoi, type PhanCauHoi } from "@/lib/rules/cau-hoi";
+import { luuDauVanCauHoi, nhanLoaiGoiYTrung, phatHienCauHoiTrung, type GoiYTrung } from "@/lib/cau-hoi/trung-lap";
 
-type ActionResult = { success: boolean; error?: string; id?: string };
+export type ActionResult = {
+  success: boolean;
+  error?: string;
+  id?: string;
+  canXacNhanTrung?: boolean;
+  goiYTrung?: GoiYTrung[];
+  canhBao?: string;
+};
 export type LoiImport = { dong: number; ma: string; noiDung: string };
-export type KetQuaImport = { success: boolean; error?: string; daNhap: number; tong: number; loi: LoiImport[] };
+export type KetQuaImport = { success: boolean; error?: string; daNhap: number; tong: number; loi: LoiImport[]; canhBao?: LoiImport[] };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const cotBatBuoc = z.coerce.string().trim().min(1);
@@ -62,12 +70,35 @@ async function damBaoMetadata(monId: string, baiHocId: string, mucDoId: string, 
   if (!mucDo) throw new Error("Mức độ đã chọn không còn sử dụng. Vui lòng chọn lại.");
 }
 
-async function luuCauHoi(duLieu: DuLieuCauHoi): Promise<ActionResult> {
+function ketQuaCanhBaoTrung(goiY: GoiYTrung[], boQuaCanhBao: boolean): ActionResult | null {
+  const trungChinhXac = goiY.find((item) => item.loai === "TrungChinhXac");
+  if (trungChinhXac) {
+    return {
+      success: false,
+      error: "Câu hỏi trùng chính xác với một câu đã có trong ngân hàng.",
+      goiYTrung: goiY,
+    };
+  }
+  if (goiY.length > 0 && !boQuaCanhBao) {
+    return {
+      success: false,
+      error: "Phát hiện câu hỏi có khả năng gần giống. Vui lòng xem trước khi tiếp tục gửi.",
+      canXacNhanTrung: true,
+      goiYTrung: goiY,
+    };
+  }
+  return null;
+}
+
+async function luuCauHoi(duLieu: DuLieuCauHoi, boQuaCanhBao = false): Promise<ActionResult> {
   try {
     const input = cauHoiSchema.parse(duLieu);
     const { supabase, session, mon, monId } = await layNguCanhGiaoVien();
     if (!phanDuocCauHinh(mon, input.phan)) return { success: false, error: `Môn này chưa sử dụng Phần ${input.phan}. Vui lòng chọn phần khác.` };
     await damBaoMetadata(monId, input.baiHocId, input.mucDoId, supabase);
+    const phatHien = await phatHienCauHoiTrung(supabase, monId, input);
+    const canhBaoTrung = ketQuaCanhBaoTrung(phatHien.goiY, boQuaCanhBao);
+    if (canhBaoTrung) return canhBaoTrung;
     const { data, error } = await supabase.rpc("tao_cau_hoi_cho_duyet", {
       p_bai_hoc_id: input.baiHocId,
       p_phan: input.phan,
@@ -78,20 +109,24 @@ async function luuCauHoi(duLieu: DuLieuCauHoi): Promise<ActionResult> {
       p_nguoi_tao_id: session.sub,
     });
     if (error) return { success: false, error: "Chưa lưu được câu hỏi. Vui lòng kiểm tra nội dung và thử lại." };
-    return { success: true, id: data as string };
+    const id = data as string;
+    const { data: cauHoiDaLuu } = await supabase.from("cau_hoi").select("updated_at").eq("cau_hoi_id", id).maybeSingle();
+    const daLuuDauVan = await luuDauVanCauHoi(supabase, id, phatHien.dauVan, cauHoiDaLuu?.updated_at);
+    const canhBao = phatHien.canhBao || (!daLuuDauVan ? "Đã lưu câu hỏi nhưng chưa tạo được dấu vân để kiểm tra trùng." : undefined);
+    return { success: true, id, goiYTrung: phatHien.goiY, canhBao };
   } catch (error) {
     const message = error instanceof z.ZodError ? error.issues[0]?.message : error instanceof Error ? error.message : "Có lỗi xảy ra";
     return { success: false, error: message };
   }
 }
 
-export async function taoCauHoi(duLieu: DuLieuCauHoi): Promise<ActionResult> {
-  const result = await luuCauHoi(duLieu);
+export async function taoCauHoi(duLieu: DuLieuCauHoi, boQuaCanhBao = false): Promise<ActionResult> {
+  const result = await luuCauHoi(duLieu, boQuaCanhBao);
   if (result.success) revalidatePath("/soan-cau-hoi");
   return result;
 }
 
-export async function guiLaiCauHoi(cauHoiId: string, duLieu: DuLieuCauHoi): Promise<ActionResult> {
+export async function guiLaiCauHoi(cauHoiId: string, duLieu: DuLieuCauHoi, boQuaCanhBao = false): Promise<ActionResult> {
   try {
     const id = z.string().uuid().parse(cauHoiId);
     const input = cauHoiSchema.parse(duLieu);
@@ -106,6 +141,9 @@ export async function guiLaiCauHoi(cauHoiId: string, duLieu: DuLieuCauHoi): Prom
       .maybeSingle();
     if (!cauHoi || cauHoi.trang_thai_duyet !== "CanChinhSua") return { success: false, error: "Câu hỏi không ở trạng thái cần chỉnh sửa" };
     if (cauHoi.phan !== input.phan) return { success: false, error: "Không thể đổi Phần của câu hỏi khi gửi lại" };
+    const phatHien = await phatHienCauHoiTrung(supabase, monId, input, id);
+    const canhBaoTrung = ketQuaCanhBaoTrung(phatHien.goiY, boQuaCanhBao);
+    if (canhBaoTrung) return canhBaoTrung;
     const { error } = await supabase.rpc("gui_lai_cau_hoi_can_chinh_sua", {
       p_cau_hoi_id: id,
       p_nguoi_tao_id: session.sub,
@@ -116,9 +154,16 @@ export async function guiLaiCauHoi(cauHoiId: string, duLieu: DuLieuCauHoi): Prom
       p_chi_tiet: input.chiTiet.map((item) => ({ noi_dung: item.noiDung, la_dap_an_dung: item.laDapAnDung })),
     });
     if (error) return { success: false, error: "Chưa gửi lại được câu hỏi. Vui lòng tải lại trang và thử lại." };
+    const { data: cauHoiDaLuu } = await supabase.from("cau_hoi").select("updated_at").eq("cau_hoi_id", id).maybeSingle();
+    const daLuuDauVan = await luuDauVanCauHoi(supabase, id, phatHien.dauVan, cauHoiDaLuu?.updated_at);
     revalidatePath("/soan-cau-hoi");
     revalidatePath("/duyet-cau-hoi");
-    return { success: true, id };
+    return {
+      success: true,
+      id,
+      goiYTrung: phatHien.goiY,
+      canhBao: phatHien.canhBao || (!daLuuDauVan ? "Đã gửi lại câu hỏi nhưng chưa cập nhật được dấu vân kiểm tra trùng." : undefined),
+    };
   } catch (error) {
     const message = error instanceof z.ZodError ? error.issues[0]?.message : error instanceof Error ? error.message : "Có lỗi xảy ra";
     return { success: false, error: message };
@@ -203,6 +248,7 @@ export async function importCauHoi(formData: FormData): Promise<KetQuaImport> {
     context.supabase.from("muc_do_nhan_thuc").select("muc_do_id, ten_muc"),
   ]);
   const loi: LoiImport[] = [];
+  const canhBao: LoiImport[] = [];
   let daNhap = 0;
 
   for (let index = 0; index < rows.length; index += 1) {
@@ -253,10 +299,22 @@ export async function importCauHoi(formData: FormData): Promise<KetQuaImport> {
       noiDung: layHtml(row, "NoiDung", "Nội dung"),
       chiTiet: phan === "III" ? [] : noiDungChiTiet.map((noiDung, i) => ({ noiDung, laDapAnDung: dapAnDung[i] ?? false })),
       dapAnPhan3: phan === "III" ? lay(row, "DapAnDung", "Đáp án đúng") : null,
-    });
-    if (result.success) daNhap += 1;
+    }, true);
+    if (result.success) {
+      daNhap += 1;
+      if (result.goiYTrung?.length) {
+        const dauTien = result.goiYTrung[0]!;
+        canhBao.push({
+          dong,
+          ma: dauTien.loai,
+          noiDung: `Đã nhập nhưng ${nhanLoaiGoiYTrung(dauTien.loai).toLowerCase()} với câu “${dauTien.noiDung.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 100)}”.`,
+        });
+      } else if (result.canhBao) {
+        canhBao.push({ dong, ma: "CHUA_KIEM_TRA_TRUNG", noiDung: result.canhBao });
+      }
+    }
     else loi.push({ dong, ma: "DU_LIEU_KHONG_HOP_LE", noiDung: result.error || "Không thể lưu" });
   }
   revalidatePath("/soan-cau-hoi");
-  return { success: true, daNhap, tong: rows.length, loi };
+  return { success: true, daNhap, tong: rows.length, loi, canhBao };
 }

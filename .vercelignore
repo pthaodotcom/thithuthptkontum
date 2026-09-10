@@ -13,3 +13,14 @@ playwright-report/
 coverage/
 *.log
 *.tsbuildinfo
+
+# Development-only material. It is retained locally or in Git documentation,
+# but is never part of the production build context.
+/artifacts/
+/docs/
+/scripts/
+/screenshots/
+/test-data/
+*.md
+*.xlsx
+*.csv

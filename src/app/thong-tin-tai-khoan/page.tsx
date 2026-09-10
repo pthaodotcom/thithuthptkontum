@@ -21,6 +21,7 @@ import {
 import { DashboardShell, type DashboardNavGroup } from "@/components/dashboard/dashboard-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { laySessionHienHanh } from "@/lib/auth/session";
+import { layThongBaoDashboard } from "@/lib/dashboard/data";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { ChinhSuaThongTinCaNhan } from "./ChinhSuaThongTinCaNhan";
@@ -84,7 +85,7 @@ export default async function ThongTinTaiKhoanPage() {
   if (!session) redirect("/dang-nhap");
 
   const supabase = taoSupabaseServiceRole();
-  const [{ data: taiKhoan }, { data: lopGiangDay }, { data: monToTruong }] = await Promise.all([
+  const [{ data: taiKhoan }, { data: lopGiangDay }, { data: monToTruong }, notifications] = await Promise.all([
     supabase
       .from("tai_khoan")
       .select(
@@ -106,6 +107,7 @@ export default async function ThongTinTaiKhoanPage() {
           .limit(1)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    layThongBaoDashboard(session.sub),
   ]);
 
   if (!taiKhoan) redirect("/dang-nhap");
@@ -154,7 +156,7 @@ export default async function ThongTinTaiKhoanPage() {
       brandLabel="Thi thử THPT"
       brandSub={vaiTroHienThi}
       navGroups={navGroups}
-      userId={session.sub}
+      notifications={notifications}
       userName={taiKhoan.ho_ten}
       userRole={vaiTroHienThi}
     >

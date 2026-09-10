@@ -14,9 +14,24 @@ describe("Gmail notification", () => {
   });
   it("render cả HTML và plain text, không lộ đáp án", () => {
     const result = taoNoiDungEmail(input);
-    expect(result.html).toContain("7.50/10");
+    expect(result.html).toContain("7.50");
+    expect(result.html).toContain(">/10<");
+    expect(result.html).toContain("Xem báo cáo chi tiết");
+    expect(result.tieuDe).toContain("[Thi thử THPT]");
     expect(result.text).toContain("Nguyễn Văn A");
-    expect(result.text.toLowerCase()).not.toContain("đáp án");
+    expect(result.text).toContain("không chứa đáp án");
+    expect(result.text).not.toMatch(/\nĐáp án:/i);
+  });
+  it("tự động xuống dòng riêng biệt cho nhận xét chung và nội dung nên ôn", () => {
+    const emailData = {
+      ...input,
+      nhanXet: "Điểm bài thi: 1.75/10 Nhận xét chung: Cần cố gắng hơn. Nội dung nên ôn: Ôn tập chương 4.",
+    };
+    const result = taoNoiDungEmail(emailData);
+    expect(result.html).toContain("Nhận xét chung:</strong> Cần cố gắng hơn.");
+    expect(result.html).toContain("Nội dung nên ôn:</strong> Ôn tập chương 4.");
+    expect(result.text).toContain("Nhận xét chung: Cần cố gắng hơn.");
+    expect(result.text).toContain("Nội dung nên ôn: Ôn tập chương 4.");
   });
   it("phân loại lỗi tạm thời và lỗi xác thực", () => {
     expect(phanLoaiLoiEmail({ code: "ETIMEDOUT", message: "timeout" }).retry).toBe(true);

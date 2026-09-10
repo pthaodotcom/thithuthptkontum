@@ -1,5 +1,6 @@
 const XLSX = require('xlsx');
 const path = require('path');
+const fs = require('fs');
 
 const questions = [];
 
@@ -229,11 +230,8 @@ ws['!cols'] = [
 
 XLSX.utils.book_append_sheet(wb, ws, "CauHoi_40Cau");
 
-// Save to 2 locations for convenience
-const target1 = path.join(__dirname, '..', 'CauHoi_40Cau.xlsx');
-const target2 = path.join(__dirname, '..', '..', 'CauHoi_40Cau.xlsx');
-
-XLSX.writeFile(wb, target1);
-XLSX.writeFile(wb, target2);
-
-console.log(`Successfully generated updated 40 questions Excel file at:\n- ${target1}\n- ${target2}`);
+const artifactDir = path.join(__dirname, '..', 'artifacts', 'reference-data');
+fs.mkdirSync(artifactDir, { recursive: true });
+const outputPath = path.join(artifactDir, 'CauHoi_40Cau.xlsx');
+XLSX.writeFile(wb, outputPath);
+console.log(`Successfully generated updated 40 questions Excel file at:\n- ${outputPath}`);

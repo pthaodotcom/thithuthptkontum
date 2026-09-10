@@ -21,6 +21,7 @@
     "fixtures:m5:status": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs status",
     "fixtures:m5:cleanup": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs cleanup",
     "fixtures:m5:retrigger": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs retrigger",
+    "fingerprints:backfill": "node --env-file=.env.local node_modules/vite-node/vite-node.mjs scripts/backfill-question-fingerprints.ts",
     "supabase:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > src/types/database.ts"
   },
   "dependencies": {

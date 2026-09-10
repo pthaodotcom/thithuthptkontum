@@ -1,4 +1,6 @@
 const XLSX = require('xlsx');
+const fs = require('fs');
+const path = require('path');
 
 const data = [
   {
@@ -102,5 +104,8 @@ const data = [
 const ws = XLSX.utils.json_to_sheet(data);
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, ws, "ImportData");
-XLSX.writeFile(wb, "cau_hoi_cong_nghe.xlsx");
-console.log("Đã tạo file cau_hoi_cong_nghe.xlsx thành công!");
+const artifactDir = path.join(__dirname, '..', 'artifacts', 'reference-data');
+fs.mkdirSync(artifactDir, { recursive: true });
+const outputPath = path.join(artifactDir, 'cau_hoi_cong_nghe.xlsx');
+XLSX.writeFile(wb, outputPath);
+console.log(`Đã tạo file mẫu tại ${outputPath}`);

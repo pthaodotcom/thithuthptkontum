@@ -97,9 +97,9 @@ await upsert("tai_khoan", [{
 await upsert("dot_thi", {
   dot_thi_id: ids.dot,
   ten_dot_thi: "M4 E2E Realtime Offline Load",
-  nam_hoc: "2098-2099",
-  ngay_thi_1: "2099-01-01",
-  ngay_thi_2: "2099-01-02",
+  nam_hoc: "2026-2027",
+  ngay_thi_1: "2026-09-05",
+  ngay_thi_2: "2026-09-06",
 }, "dot_thi_id");
 
 // Remove only disposable E2E attempts before rebuilding their immutable papers.

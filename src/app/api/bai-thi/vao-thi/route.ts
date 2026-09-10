@@ -4,7 +4,7 @@ import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { apiLoi, apiThanhCong } from "@/lib/api/response";
 import { conDuocVaoThi } from "@/lib/rules/ky-thi";
-import { apDungDemoBypass, demoBypassDangBat, type DemoBypassOverride } from "@/lib/demo/bypass";
+import { apDungDemoBypassTheoBaiLam, demoBypassDangBat, type DemoBypassOverride } from "@/lib/demo/bypass";
 
 /**
  * POST /api/bai-thi/vao-thi - UC-EXAM-01 / FR-M5-01
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const supabase = taoSupabaseServiceRole();
   const { data: baiLam } = await supabase
     .from("bai_lam_thi")
-    .select("*,ca_thi_mon!inner(mon_id,ca_thi!inner(dot_thi_id,gio_bat_dau,gio_ket_thuc,trang_thai),de_thi(de_thi_id,trang_thai))")
+    .select("bai_lam_id,trang_thai,ma_de_id,ca_thi_mon!inner(mon_id,ca_thi!inner(dot_thi_id,gio_bat_dau,gio_ket_thuc,trang_thai),de_thi(de_thi_id,trang_thai))")
     .eq("ca_thi_mon_id", parsed.data.caThiMonId)
     .eq("hoc_sinh_tai_khoan_id", session.sub)
     .maybeSingle();
@@ -39,19 +39,20 @@ export async function POST(req: NextRequest) {
   let demoOverride: DemoBypassOverride | null = null;
   if (demoBypassDangBat()) {
     const { data } = await supabase
-      .from("demo_bypass_ca_thi_mon")
-      .select("trang_thai,gio_bat_dau,gio_ket_thuc")
-      .eq("ca_thi_mon_id", parsed.data.caThiMonId)
+      .from("demo_luot_thi_bai_lam")
+      .select("trang_thai_hien_thi,gio_bat_dau,gio_ket_thuc,demo_luot_thi!inner(trang_thai)")
+      .eq("bai_lam_id", baiLam.bai_lam_id)
+      .eq("demo_luot_thi.trang_thai", "DangMo")
       .maybeSingle();
     if (data) {
       demoOverride = {
-        trang_thai: data.trang_thai as DemoBypassOverride["trang_thai"],
+        trang_thai: data.trang_thai_hien_thi as DemoBypassOverride["trang_thai"],
         gio_bat_dau: data.gio_bat_dau,
         gio_ket_thuc: data.gio_ket_thuc,
       };
     }
   }
-  const lichHieuLuc = apDungDemoBypass(
+  const lichHieuLuc = apDungDemoBypassTheoBaiLam(
     { trangThai: ca.trang_thai, gioBatDau: ca.gio_bat_dau, gioKetThuc: ca.gio_ket_thuc },
     demoOverride
   );
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    de = deTheoDot;
+    de = deTheoDot ?? undefined;
   }
   // Chỉ chế độ demo mới được lấy lại đề hợp lệ gần nhất của đúng môn từ một
   // đợt khác. Release vẫn giới hạn đề trong phạm vi (đợt thi, môn).
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    de = deTaiSuDung;
+    de = deTaiSuDung ?? undefined;
   }
   if (!de || de.trang_thai === "DangSoan") return apiLoi("THIEU_DE_THI", "Môn thi chưa có đề đã giao", 409);
   const { data: cacMa } = await supabase.from("ma_de").select("ma_de_id,thu_tu_hien_thi").eq("de_thi_id", de.de_thi_id);

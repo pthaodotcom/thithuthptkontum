@@ -210,7 +210,7 @@ begin
     dot_thi_id, ten_dot_thi, nam_hoc, ngay_thi_1, ngay_thi_2
   ) values (
     'a4500000-0000-0000-0000-000000000004',
-    'Đề mẫu M4 Tin học', '2098-2099', '2099-01-01', '2099-01-02'
+    'Luyện tập môn Tin học', '2026-2027', '2026-09-09', '2026-09-10'
   )
   on conflict(dot_thi_id) do update
     set ten_dot_thi = excluded.ten_dot_thi,
@@ -230,7 +230,7 @@ begin
   ) values (
     'a4500000-0000-0000-0000-000000000005',
     'a4500000-0000-0000-0000-000000000004', 3,
-    '2099-01-02T00:30:00Z', '2099-01-02T02:00:00Z', 'DangMo'
+    '2026-09-10T00:00:00Z', '2026-09-10T16:59:59Z', 'DangMo'
   )
   on conflict(ca_thi_id) do update
     set dot_thi_id = excluded.dot_thi_id,

@@ -1,4 +1,5 @@
 export function lamSachNhanXet(noiDung: string, diem?: number) {
+  if (!noiDung || !noiDung.trim()) return "";
   const noiDungSach = noiDung
     .replace(/\*\*/g, "")
     .replace(/^\s*[-*]\s+/gm, "")
@@ -13,16 +14,21 @@ export function lamSachNhanXet(noiDung: string, diem?: number) {
       ? `Điểm bài thi: ${diemTrongNoiDung}`
       : "";
 
-  const haiPhan = noiDungSach.match(
-    /Điểm mạnh:\s*([\s\S]*?)\s*Nội dung nên ôn:\s*([\s\S]*)/i,
+  // Loại bỏ dòng Điểm bài thi trong phần nội dung để tránh bị lặp
+  const phanNoiDung = noiDungSach
+    .replace(/(?:^|\n)\s*Điểm bài thi:[^\n]*/gi, "")
+    .trim();
+
+  const haiPhan = phanNoiDung.match(
+    /(?:Điểm mạnh|Nhận xét chung|Nhận xét|Đánh giá chung):\s*([\s\S]*?)\s*(?:Nội dung nên ôn|Nội dung cần ôn|Cần ôn thêm|Cần củng cố|Định hướng ôn tập):\s*([\s\S]*)/i,
   );
-  if (!haiPhan) return [dongDiem, noiDungSach].filter(Boolean).join("\n");
+  if (!haiPhan) return [dongDiem, phanNoiDung].filter(Boolean).join("\n");
 
   const diemManh = (haiPhan[1] ?? "").replace(/\s+/g, " ").trim();
   const noiDungNenOn = (haiPhan[2] ?? "").replace(/\s+/g, " ").trim();
   return [
     dongDiem,
-    `Điểm mạnh: ${diemManh}`,
+    `Nhận xét chung: ${diemManh}`,
     `Nội dung nên ôn: ${noiDungNenOn}`,
   ].filter(Boolean).join("\n");
 }
@@ -53,13 +59,17 @@ export async function sinhNhanXetGemini(duLieu: {
     "Viết nhận xét học tập bằng tiếng Việt, ngắn gọn và không nêu dữ liệu định danh.",
     `Điểm bài thi: ${diemBaiThi}. Nhóm năng lực: ${nhomNangLuc}.`,
     `Chuyên đề cần ôn: ${chuyenDeCanOn}.`,
-    "Đầu ra gồm một dòng điểm bài thi và đúng hai ý nhận xét: điểm mạnh và nội dung nên ôn.",
+    "Đầu ra gồm một dòng điểm bài thi và đúng hai ý nhận xét: nhận xét chung và nội dung nên ôn.",
     "Chỉ nhận xét từ dữ liệu đã cung cấp; không suy đoán thái độ, hành vi hoặc thành tích khác của người học.",
-    "Ở ý điểm mạnh, chỉ nêu mức độ kiến thức phù hợp với điểm bài thi và nhóm năng lực.",
+    "Nhận xét phải tạo thêm giá trị so với việc lặp lại điểm, tên nhóm năng lực và danh sách chuyên đề.",
+    "Ở ý nhận xét chung, liên kết điểm bài thi với mức độ hoàn thành kiến thức trong phạm vi bài thi; không chỉ nhắc lại tên nhóm năng lực.",
+    "Ở ý nội dung nên ôn, gắn từng chuyên đề được cung cấp với một hành động ôn tập cụ thể như rà soát kiến thức nền tảng, làm lại câu đã sai hoặc luyện thêm bài tập cùng dạng.",
+    "Khi có nhiều chuyên đề nhưng không có tỷ lệ đúng, không tự xếp chuyên đề nào yếu hơn. Khi chưa có dữ liệu chuyên đề, nêu rõ giới hạn và đưa ra hướng ôn tập chung.",
+    "Mỗi ý viết từ một đến hai câu ngắn, có tính định hướng và không trùng ý với dòng điểm.",
     "Không in đậm, không dùng Markdown và không thêm lời mở đầu hoặc kết luận.",
     "Trả về đúng ba dòng theo mẫu:",
     `Điểm bài thi: ${diemBaiThi}/10`,
-    "Điểm mạnh: <nhận xét phù hợp với điểm bài thi và nhóm năng lực>",
+    "Nhận xét chung: <nhận xét phù hợp với điểm bài thi và nhóm năng lực>",
     "Nội dung nên ôn: <chuyên đề cần ôn và định hướng ôn tập ngắn gọn>",
   ].join("\n");
   const response = await fetch(
@@ -100,7 +110,7 @@ export function nhanXetFallback(nhom: string, chuyenDeYeu: string[] = [], diem?:
   }
   return [
     typeof diem === "number" ? `Điểm bài thi: ${diem.toFixed(2)}/10` : "",
-    `Điểm mạnh: ${diemManh[nhom] ?? "Đã hoàn thành bài thi và có kết quả để xác định nội dung cần cải thiện."}`,
+    `Nhận xét chung: ${diemManh[nhom] ?? "Đã hoàn thành bài thi và có kết quả để xác định nội dung cần cải thiện."}`,
     `Nội dung nên ôn: ${noiDungNenOn}`,
   ].filter(Boolean).join("\n");
 }

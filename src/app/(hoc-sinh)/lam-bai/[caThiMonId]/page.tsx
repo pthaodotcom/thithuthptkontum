@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import {
-  apDungDemoBypass,
+  apDungDemoBypassTheoBaiLam,
   demoBypassDangBat,
   type DemoBypassOverride,
 } from "@/lib/demo/bypass";
@@ -87,18 +87,19 @@ export default async function LamBaiPage({
 
   if (caThi && demoBypassDangBat()) {
     const { data: demoRow } = await supabase
-      .from("demo_bypass_ca_thi_mon")
-      .select("trang_thai,gio_bat_dau,gio_ket_thuc")
-      .eq("ca_thi_mon_id", caThiMonId)
+      .from("demo_luot_thi_bai_lam")
+      .select("trang_thai_hien_thi,gio_bat_dau,gio_ket_thuc,demo_luot_thi!inner(trang_thai)")
+      .eq("bai_lam_id", baiLam.bai_lam_id)
+      .eq("demo_luot_thi.trang_thai", "DangMo")
       .maybeSingle();
     const demoOverride = demoRow
       ? {
-          trang_thai: demoRow.trang_thai as DemoBypassOverride["trang_thai"],
+          trang_thai: demoRow.trang_thai_hien_thi as DemoBypassOverride["trang_thai"],
           gio_bat_dau: demoRow.gio_bat_dau,
           gio_ket_thuc: demoRow.gio_ket_thuc,
         }
       : null;
-    gioKetThuc = apDungDemoBypass(
+    gioKetThuc = apDungDemoBypassTheoBaiLam(
       {
         trangThai: caThi.trang_thai,
         gioBatDau: caThi.gio_bat_dau,
@@ -117,14 +118,16 @@ export default async function LamBaiPage({
   }));
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <ExamClient
-        caThiMonId={caThiMonId}
-        baiLamId={baiLam.trang_thai === "DangThi" ? baiLam.bai_lam_id : undefined}
-        gioKetThuc={gioKetThuc}
-        cauHoi={cauHoi}
-        banDau={banDau}
-      />
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-background text-foreground">
+      <div className="min-h-full px-3 py-4 sm:px-5 sm:py-5 lg:px-8 lg:py-6">
+        <ExamClient
+          caThiMonId={caThiMonId}
+          baiLamId={baiLam.trang_thai === "DangThi" ? baiLam.bai_lam_id : undefined}
+          gioKetThuc={gioKetThuc}
+          cauHoi={cauHoi}
+          banDau={banDau}
+        />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai Webapp — Hệ thống Thi thử Trực tuyến cấp Trường THPT
 
-**Nguồn gốc:** `../3.2_Khung_yeu_cau_chuc_nang.md` (22 FR, 5 module M1-M5), `use-case-v4/` (31 UC), `../Thiet_ke_CSDL_Rut_Gon_KhoaLuan.md` (27 bảng).
+**Nguồn gốc:** `3.2_Khung_yeu_cau_chuc_nang.md` (22 FR, 5 module M1-M5), `use-case-v4/` (31 UC), `../Thiet_ke_CSDL_Rut_Gon_KhoaLuan.md` (27 bảng).
 Tài liệu này KHÔNG lặp lại nội dung nghiệp vụ đã có — chỉ ánh xạ nghiệp vụ đó sang kiến trúc kỹ thuật, thư mục code, và roadmap. Mọi mã FR/UC nhắc tới bên dưới đều tra ngược được vào 3 file nguồn trên.
 
 **Đường cơ sở cập nhật:** BFD 5 nhánh và khung chức năng ngày 2026-07-30 thay thế cách nhóm 6 module trước đây. Việc giảm từ 29 xuống 22 FR là tái cấu trúc/gộp box chức năng; phạm vi triển khai vẫn được phân rã thành 31 UC để không làm mất các luồng nghiệp vụ khác tác nhân hoặc khác kết quả.

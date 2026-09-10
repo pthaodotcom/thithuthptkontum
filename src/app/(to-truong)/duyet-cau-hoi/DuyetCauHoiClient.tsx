@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BookOpen, Layers3, UserRound } from "lucide-react";
+import { AlertTriangle, BookOpen, Layers3, Link2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import type { GoiYTrung } from "@/lib/cau-hoi/trung-lap";
 import { NHAN_PHAN_LOAI_LOI, type PhanLoaiLoi } from "@/lib/rules/yeu-cau-chinh-sua";
-import { duyetCauHoi, duyetYeuCau } from "./actions";
+import { duyetCauHoi, duyetYeuCau, ganNhomCauHoiTrung } from "./actions";
 
 type ChiTiet = { thu_tu: number; noi_dung: string; la_dap_an_dung: boolean };
 type Cau = {
@@ -19,6 +20,7 @@ type Cau = {
   muc_do_nhan_thuc?: { ten_muc: string } | { ten_muc: string }[] | null;
   bai_hoc?: { ten_bai_hoc: string; chuyen_de?: { ten_chuyen_de: string } | { ten_chuyen_de: string }[] | null } | null;
   tai_khoan?: { ho_ten: string } | { ho_ten: string }[] | null;
+  goi_y_trung?: GoiYTrung[];
 };
 type YC = { yc_id: string; noi_dung_de_xuat: { ly_do?: string; phan_loai_loi?: PhanLoaiLoi | null; [key: string]: unknown }; cau_hoi: Cau };
 type QuyetDinh = "DaDuyet" | "TuChoi" | "CanChinhSua";
@@ -30,7 +32,30 @@ export default function DuyetCauHoiClient({ mon, cauHoi, yeuCau }: { mon: string
   </div>;
 }
 function Queue({title,empty,children}:{title:string;empty:string;children:React.ReactNode}) { return <section><h2 className="mb-3 text-lg font-bold">{title}</h2><div className="space-y-4">{children || <p className="rounded-xl border bg-white p-5 text-sm text-slate-500">{empty}</p>}</div></section>; }
-function Card({cau,onAction}:{cau:Cau;onAction:(q:QuyetDinh,l?:string)=>Promise<{success:boolean;error?:string}>}) { return <div className="rounded-xl border bg-white p-5"><Preview cau={cau}/><Actions onAction={onAction}/></div>; }
+function Card({cau,onAction}:{cau:Cau;onAction:(q:QuyetDinh,l?:string)=>Promise<{success:boolean;error?:string}>}) { return <div className="rounded-xl border bg-white p-5"><Preview cau={cau}/>{Boolean(cau.goi_y_trung?.length) && <GoiYCauHoiTrung cauHoiId={cau.cau_hoi_id} items={cau.goi_y_trung!}/>}<Actions onAction={onAction}/></div>; }
+
+function GoiYCauHoiTrung({ cauHoiId, items }: { cauHoiId: string; items: GoiYTrung[] }) {
+  const [pending, start] = useTransition();
+  const [daGan, setDaGan] = useState<string | null>(null);
+  const ganNhom = (daiDienId: string) => start(async () => {
+    const result = await ganNhomCauHoiTrung(cauHoiId, daiDienId);
+    if (!result.success) { toast.error(result.error); return; }
+    setDaGan(daiDienId);
+    toast.success("Đã xác nhận hai câu thuộc cùng nhóm");
+  });
+  return <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+    <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700"/><div><p className="text-sm font-semibold text-amber-900">Câu hỏi có khả năng trùng hoặc cùng dạng</p><p className="mt-0.5 text-xs text-amber-800">Thuật toán chỉ gợi ý. Hãy đối chiếu nội dung và đáp án trước khi xác nhận nhóm.</p></div></div>
+    <div className="mt-3 space-y-2">{items.map((item) => <div key={item.cauHoiId} className="rounded-md border border-amber-200 bg-white p-3 text-sm"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">{nhanLoaiTrung(item.loai)}</span><span className="text-xs text-slate-500">{Math.round(item.diemTuongDong * 100)}% · {item.tenChuyenDe} / {item.tenBaiHoc}</span></div><p className="mt-2 line-clamp-3 text-slate-800">{boHtml(item.noiDung)}</p><div className="mt-2 flex justify-end"><Button type="button" size="sm" variant="outline" disabled={pending || daGan === item.cauHoiId} onClick={() => ganNhom(item.cauHoiId)}><Link2 className="mr-1.5 h-3.5 w-3.5"/>{daGan === item.cauHoiId ? "Đã gán cùng nhóm" : "Xác nhận cùng nhóm"}</Button></div></div>)}</div>
+  </div>;
+}
+
+function nhanLoaiTrung(loai: GoiYTrung["loai"]) {
+  return loai === "TrungChinhXac" ? "Trùng chính xác" : loai === "CungMauKhacSo" ? "Cùng dạng – khác số" : "Gần giống nội dung";
+}
+
+function boHtml(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
 function motGiaTri<T>(value: T | T[] | null | undefined): T | undefined {
   return Array.isArray(value) ? value[0] : value ?? undefined;
 }

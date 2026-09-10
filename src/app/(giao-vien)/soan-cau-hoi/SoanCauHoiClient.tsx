@@ -2,15 +2,29 @@
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { BookOpen, FileSpreadsheet, Loader2, Pencil, PlusCircle, Send } from "lucide-react";
+import { AlertTriangle, BookOpen, FileSpreadsheet, Loader2, Pencil, PlusCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import RichContentEditor from "@/components/RichContentEditor";
-import { guiLaiCauHoi, importCauHoi, taoCauHoi, type KetQuaImport } from "./actions";
+import { guiLaiCauHoi, importCauHoi, taoCauHoi, type ActionResult, type KetQuaImport } from "./actions";
 
 type Phan = "I" | "II" | "III";
+type DuLieuGui = {
+  phan: Phan;
+  baiHocId: string;
+  mucDoId: string;
+  noiDung: string;
+  chiTiet: { noiDung: string; laDapAnDung: boolean }[];
+  dapAnPhan3: string | null;
+};
+type CanhBaoTrung = {
+  payload: DuLieuGui;
+  editingId: string | null;
+  choPhepTiepTuc: boolean;
+  items: NonNullable<ActionResult["goiYTrung"]>;
+};
 type ChuyenDe = { chuyen_de_id: string; ten_chuyen_de: string; bai_hoc: { bai_hoc_id: string; ten_bai_hoc: string }[] };
 type Props = {
   mon: string;
@@ -34,6 +48,7 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
   const [dapAnPhan3, setDapAnPhan3] = useState(["", "", "", ""]);
   const [importResult, setImportResult] = useState<KetQuaImport | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [canhBaoTrung, setCanhBaoTrung] = useState<CanhBaoTrung | null>(null);
   const [isPending, startTransition] = useTransition();
   const baiHoc = useMemo(() => chuyenDe.find((item) => item.chuyen_de_id === chuyenDeId)?.bai_hoc || [], [chuyenDe, chuyenDeId]);
 
@@ -42,10 +57,8 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
     setBaiHocId(chuyenDe.find((item) => item.chuyen_de_id === id)?.bai_hoc[0]?.bai_hoc_id || "");
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    startTransition(async () => {
-      const payload = {
+  function taoPayload(): DuLieuGui {
+    return {
         phan,
         baiHocId,
         mucDoId,
@@ -53,11 +66,47 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
         chiTiet: phan === "III" ? [] : chiTiet.map((item, index) => ({ noiDung: item, laDapAnDung: phan === "I" ? index === dungPhan1 : dungPhan2[index] ?? false })),
         dapAnPhan3: phan === "III" ? dapAnPhan3.join("") : null,
       };
-      const result = editingId ? await guiLaiCauHoi(editingId, payload) : await taoCauHoi(payload);
-      if (!result.success) { toast.error(result.error); return; }
-      toast.success(editingId ? "Đã sửa và gửi lại câu hỏi để duyệt" : "Đã gửi câu hỏi, đang chờ Tổ trưởng duyệt");
+  }
+
+  async function guiPayload(payload: DuLieuGui, idDangSua: string | null, boQuaCanhBao: boolean) {
+      const result = idDangSua ? await guiLaiCauHoi(idDangSua, payload, boQuaCanhBao) : await taoCauHoi(payload, boQuaCanhBao);
+      if (!result.success) {
+        if (result.goiYTrung?.length) {
+          setCanhBaoTrung({ payload, editingId: idDangSua, choPhepTiepTuc: Boolean(result.canXacNhanTrung), items: result.goiYTrung });
+        }
+        toast.error(result.error);
+        return;
+      }
+      if (result.canhBao) toast.warning(result.canhBao);
+      toast.success(idDangSua ? "Đã sửa và gửi lại câu hỏi để duyệt" : "Đã gửi câu hỏi, đang chờ Tổ trưởng duyệt");
       setEditingId(null);
+      setCanhBaoTrung(null);
       setNoiDung(""); setChiTiet(["", "", "", ""]); setDapAnPhan3(["", "", "", ""]);
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const payload = taoPayload();
+    const idDangSua = editingId;
+    startTransition(async () => {
+      await guiPayload(payload, idDangSua, false);
+    });
+  }
+
+  function tiepTucGuiCauNghiTrung() {
+    if (!canhBaoTrung?.choPhepTiepTuc) return;
+    const warning = canhBaoTrung;
+    const payloadHienTai = taoPayload();
+    if (JSON.stringify(payloadHienTai) !== JSON.stringify(warning.payload) || editingId !== warning.editingId) {
+      setCanhBaoTrung(null);
+      toast.info("Nội dung đã thay đổi nên hệ thống sẽ kiểm tra trùng lại.");
+      startTransition(async () => {
+        await guiPayload(payloadHienTai, editingId, false);
+      });
+      return;
+    }
+    startTransition(async () => {
+      await guiPayload(warning.payload, warning.editingId, true);
     });
   }
 
@@ -65,6 +114,7 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
     const chiTietMoi=[...(cau.chi_tiet_cau_hoi||[])].sort((a,b)=>a.thu_tu-b.thu_tu);
     const chuyenDeMoi=cau.bai_hoc?.chuyen_de?.chuyen_de_id||"";
     setEditingId(cau.cau_hoi_id);
+    setCanhBaoTrung(null);
     setActiveTab("manual");
     setPhan(cau.phan);
     setChuyenDeId(chuyenDeMoi);
@@ -140,6 +190,7 @@ export default function SoanCauHoiClient({ mon, phanChoPhep, chuyenDe, mucDo, ca
                   <Input className="h-11 px-4 text-base md:text-base" value={value} onChange={(e) => setChiTiet((old) => old.map((item, i) => i === index ? e.target.value : item))} placeholder={phan === "I" ? `Nhập phương án ${String.fromCharCode(65 + index)}` : `Nhập ý ${String.fromCharCode(97 + index)}`} />
                 </div>)}</div>
               )}
+              {canhBaoTrung && <CanhBaoCauHoiTrung warning={canhBaoTrung} pending={isPending} onContinue={tiepTucGuiCauNghiTrung} onDismiss={() => setCanhBaoTrung(null)} />}
               <div className="flex justify-end gap-2 border-t pt-5">{editingId&&<Button type="button" variant="ghost" onClick={()=>setEditingId(null)}>Hủy chỉnh sửa</Button>}<Button type="submit" disabled={isPending || !baiHocId} className="h-11 px-7 text-base"><Send className="mr-2 h-4 w-4" />{isPending ? "Đang gửi…" : editingId?"Sửa và gửi lại":"Gửi duyệt"}</Button></div>
             </form>
         ) : (
@@ -164,5 +215,21 @@ function SelectField({ label, options, name, value, onChange }: { label: string;
 }
 
 function ImportSummary({ result }: { result: KetQuaImport }) {
-  return <div className={`rounded-lg p-3 text-sm ${result.success ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}><p className="font-semibold">{result.success ? `Đã nhập ${result.daNhap}/${result.tong} câu` : result.error}</p>{result.loi.length > 0 && <div className="mt-2 max-h-48 overflow-auto"><table className="w-full text-xs"><tbody>{result.loi.map((item, index) => <tr key={`${item.dong}-${index}`} className="border-t"><td className="py-1 pr-2">Dòng {item.dong}</td><td>{item.noiDung}</td></tr>)}</tbody></table></div>}</div>;
+  return <div className="space-y-3"><div className={`rounded-lg p-3 text-sm ${result.success ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}><p className="font-semibold">{result.success ? `Đã nhập ${result.daNhap}/${result.tong} câu` : result.error}</p>{result.loi.length > 0 && <div className="mt-2 max-h-48 overflow-auto"><table className="w-full text-xs"><tbody>{result.loi.map((item, index) => <tr key={`${item.dong}-${index}`} className="border-t"><td className="py-1 pr-2">Dòng {item.dong}</td><td>{item.noiDung}</td></tr>)}</tbody></table></div>}</div>{Boolean(result.canhBao?.length) && <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-semibold">Cảnh báo câu hỏi gần giống</p><div className="mt-2 max-h-48 overflow-auto"><table className="w-full text-xs"><tbody>{result.canhBao!.map((item, index) => <tr key={`${item.dong}-${index}`} className="border-t border-amber-200"><td className="py-1 pr-2">Dòng {item.dong}</td><td>{item.noiDung}</td></tr>)}</tbody></table></div></div>}</div>;
+}
+
+function CanhBaoCauHoiTrung({ warning, pending, onContinue, onDismiss }: { warning: CanhBaoTrung; pending: boolean; onContinue: () => void; onDismiss: () => void }) {
+  return <div className={`rounded-xl border p-4 ${warning.choPhepTiepTuc ? "border-amber-300 bg-amber-50" : "border-red-300 bg-red-50"}`}>
+    <div className="flex items-start gap-3"><AlertTriangle className={`mt-0.5 h-5 w-5 shrink-0 ${warning.choPhepTiepTuc ? "text-amber-700" : "text-red-700"}`} /><div className="min-w-0 flex-1"><p className="font-semibold">{warning.choPhepTiepTuc ? "Phát hiện câu hỏi có khả năng gần giống" : "Không thể gửi vì câu hỏi trùng chính xác"}</p><p className="mt-1 text-sm">Hệ thống chỉ cảnh báo theo độ tương đồng văn bản. Tổ trưởng sẽ là người xác nhận cuối cùng.</p></div></div>
+    <div className="mt-3 space-y-2">{warning.items.map((item) => <div key={item.cauHoiId} className="rounded-lg border bg-white p-3 text-sm"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold">{nhanLoai(item.loai)}</span><span className="text-xs text-slate-500">{Math.round(item.diemTuongDong * 100)}% · {item.tenChuyenDe} / {item.tenBaiHoc}</span></div><p className="mt-2 line-clamp-3">{boHtml(item.noiDung)}</p></div>)}</div>
+    <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="outline" onClick={onDismiss}>Chỉnh sửa lại</Button>{warning.choPhepTiepTuc && <Button type="button" disabled={pending} onClick={onContinue}>{pending ? "Đang gửi…" : "Vẫn gửi để Tổ trưởng xem"}</Button>}</div>
+  </div>;
+}
+
+function nhanLoai(loai: "TrungChinhXac" | "CungMauKhacSo" | "GanGiongNoiDung") {
+  return loai === "TrungChinhXac" ? "Trùng chính xác" : loai === "CungMauKhacSo" ? "Cùng dạng – khác số" : "Gần giống nội dung";
+}
+
+function boHtml(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }

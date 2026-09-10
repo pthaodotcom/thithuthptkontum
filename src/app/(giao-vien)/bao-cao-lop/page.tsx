@@ -16,9 +16,11 @@ export default async function BaoCaoLopPage({
   searchParams: Promise<{ monId?: string; lopId?: string; caThiMonId?: string }>;
 }) {
   const { monId, lopId, caThiMonId } = await searchParams;
-  const monOptions = await layDanhSachMonChoBaoCao();
-  const lopOptions = monId ? await layDanhSachLopChoMon(monId) : [];
-  const caThiOptions = monId && lopId ? await layDanhSachCaThiChoLopMon(monId, lopId) : [];
+  const [monOptions, lopOptions, caThiOptions] = await Promise.all([
+    layDanhSachMonChoBaoCao(),
+    monId ? layDanhSachLopChoMon(monId) : Promise.resolve([]),
+    monId && lopId ? layDanhSachCaThiChoLopMon(monId, lopId) : Promise.resolve([]),
+  ]);
   const daChonDu = Boolean(monId && lopId && caThiMonId);
 
   return (

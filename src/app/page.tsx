@@ -14,18 +14,21 @@ export default async function Home() {
     redirect("/doi-mat-khau");
   }
 
-  // Redirect theo vai trò
+  // Báo cáo là điểm vào chung sau khi đăng nhập cho các vai trò quản lý.
   switch (session.vai_tro) {
     case "Admin":
-      redirect("/mon-hoc");
-    case "GiaoVien":
+      redirect("/bao-cao");
+    case "GiaoVien": {
+      // Tổ trưởng vẫn dùng vai trò GiaoVien, nên xác định theo bổ nhiệm môn.
       const supabase = taoSupabaseServiceRole();
       const { data: monQuanLy } = await supabase
         .from("mon")
         .select("mon_id")
         .eq("to_truong_tai_khoan_id", session.sub)
+        .limit(1)
         .maybeSingle();
-      redirect(monQuanLy ? "/khung-chuyen-de" : "/soan-cau-hoi");
+      redirect(monQuanLy ? "/bao-cao-mon" : "/bao-cao-lop");
+    }
     case "HocSinh":
       redirect("/ky-thi");
     default:

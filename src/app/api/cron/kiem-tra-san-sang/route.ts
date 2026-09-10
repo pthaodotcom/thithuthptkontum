@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { apiLoi, apiThanhCong } from "@/lib/api/response";
-import { demoBypassDangBat } from "@/lib/demo/bypass";
 
 /**
  * GET /api/cron/kiem-tra-san-sang - UC-BATCH-05 / FR-M4-03
@@ -43,20 +42,6 @@ export async function GET(req: NextRequest) {
           .eq("ca_thi_mon.ca_thi.dot_thi_id", ca.dot_thi_id)
           .neq("trang_thai", "DangSoan");
         coDe = Boolean(count);
-      }
-      if (!coDe && demoBypassDangBat()) {
-        const { count: soOverride } = await supabase
-          .from("demo_bypass_ca_thi_mon")
-          .select("ca_thi_mon_id", { count: "exact", head: true })
-          .eq("ca_thi_mon_id", ctm.id);
-        if (soOverride) {
-          const { count: soDeTaiSuDung } = await supabase
-            .from("de_thi")
-            .select("de_thi_id,ma_de!inner(ma_de_id),ca_thi_mon!inner(mon_id)", { count: "exact", head: true })
-            .eq("ca_thi_mon.mon_id", ctm.mon_id)
-            .in("trang_thai", ["DaGiaoChuaBatDau", "DangThi", "DaThiXong"]);
-          coDe = Boolean(soDeTaiSuDung);
-        }
       }
       if (!coDe) {
         thieu.push({ caThiId: ca.ca_thi_id, caThiMonId: ctm.id, monId: ctm.mon_id });

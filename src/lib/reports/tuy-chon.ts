@@ -5,6 +5,7 @@
  */
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
+import { cache } from "react";
 
 export type MonOption = { mon_id: string; ten_mon: string };
 export type LopOption = { lop_id: string; ten_lop: string; khoi: string };
@@ -22,7 +23,7 @@ type PhamViBaoCao = {
   lopDuocXem: Set<string> | null; // null = khong gioi han (Admin hoac To truong)
 };
 
-async function layPhamViBaoCao(): Promise<PhamViBaoCao> {
+export const layPhamViBaoCao = cache(async function layPhamViBaoCao(): Promise<PhamViBaoCao> {
   const session = await laySessionHienHanh();
   if (!session || !["Admin", "GiaoVien"].includes(session.vai_tro)) throw new Error("KHONG_CO_QUYEN");
   if (session.vai_tro === "Admin") return { monBatBuoc: null, lopDuocXem: null };
@@ -39,7 +40,7 @@ async function layPhamViBaoCao(): Promise<PhamViBaoCao> {
     lopDuocXem = new Set((phanCong || []).map((x) => x.lop_id));
   }
   return { monBatBuoc, lopDuocXem };
-}
+});
 
 export async function layDanhSachMonChoBaoCao(): Promise<MonOption[]> {
   const phamVi = await layPhamViBaoCao();
@@ -77,33 +78,23 @@ export async function layDanhSachCaThiChoLopMon(monId: string, lopId: string): P
 
   const { data: caThiList, error: errCaThi } = await supabase
     .from("ca_thi")
-    .select("ca_thi_id,so_thu_tu_ca,gio_bat_dau,trang_thai,dot_thi_id,dot_thi(ten_dot_thi,nam_hoc)")
-    .in("dot_thi_id", dotThiIds);
+    .select("ca_thi_id,so_thu_tu_ca,gio_bat_dau,trang_thai,dot_thi_id,dot_thi(ten_dot_thi,nam_hoc),ca_thi_mon!inner(id,mon_id)")
+    .in("dot_thi_id", dotThiIds)
+    .eq("ca_thi_mon.mon_id", monId);
   if (errCaThi) throw new Error(errCaThi.message);
-  const caThiIds = (caThiList || []).map((x) => x.ca_thi_id);
-  if (caThiIds.length === 0) return [];
-
-  const { data: ctmList, error: errCtm } = await supabase
-    .from("ca_thi_mon")
-    .select("id,ca_thi_id")
-    .eq("mon_id", monId)
-    .in("ca_thi_id", caThiIds);
-  if (errCtm) throw new Error(errCtm.message);
-
-  const caThiById = new Map((caThiList || []).map((c) => [c.ca_thi_id, c]));
   const out: CaThiOption[] = [];
-  for (const ctm of ctmList || []) {
-    const ca = caThiById.get(ctm.ca_thi_id);
-    if (!ca) continue;
+  for (const ca of caThiList || []) {
     const dot = Array.isArray(ca.dot_thi) ? ca.dot_thi[0] : ca.dot_thi;
-    out.push({
-      ca_thi_mon_id: ctm.id,
-      ten_dot_thi: dot?.ten_dot_thi ?? "",
-      nam_hoc: dot?.nam_hoc ?? "",
-      so_thu_tu_ca: ca.so_thu_tu_ca,
-      gio_bat_dau: ca.gio_bat_dau,
-      trang_thai: ca.trang_thai,
-    });
+    for (const ctm of ca.ca_thi_mon || []) {
+      out.push({
+        ca_thi_mon_id: ctm.id,
+        ten_dot_thi: dot?.ten_dot_thi ?? "",
+        nam_hoc: dot?.nam_hoc ?? "",
+        so_thu_tu_ca: ca.so_thu_tu_ca,
+        gio_bat_dau: ca.gio_bat_dau,
+        trang_thai: ca.trang_thai,
+      });
+    }
   }
   return out.sort((a, b) => a.gio_bat_dau.localeCompare(b.gio_bat_dau));
 }

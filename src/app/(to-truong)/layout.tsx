@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { BarChart3, BookOpen, FileCheck2, Files, FilePenLine, LayoutList, MessageSquareWarning } from "lucide-react";
 
 import { laySessionHienHanh } from "@/lib/auth/session";
+import { layThongBaoDashboard } from "@/lib/dashboard/data";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { DashboardShell, type DashboardNavGroup } from "@/components/dashboard/dashboard-shell";
 
@@ -10,16 +11,15 @@ export default async function ToTruongLayout({ children }: { children: ReactNode
   const session = await laySessionHienHanh();
   if (!session || session.vai_tro !== "GiaoVien") redirect("/dang-nhap");
   const supabase = taoSupabaseServiceRole();
-  const { data: taiKhoan } = await supabase
-    .from("tai_khoan")
-    .select("ho_ten, vai_tro, mon_id")
-    .eq("tai_khoan_id", session.sub)
-    .maybeSingle();
-  const { data: mon } = await supabase
-    .from("mon")
-    .select("ten_mon, mon_id, to_truong_tai_khoan_id")
-    .eq("mon_id", taiKhoan?.mon_id ?? "")
-    .maybeSingle();
+  const [{ data: taiKhoan }, notifications] = await Promise.all([
+    supabase
+      .from("tai_khoan")
+      .select("ho_ten, vai_tro, mon_id, mon:mon_id(mon_id,ten_mon,to_truong_tai_khoan_id)")
+      .eq("tai_khoan_id", session.sub)
+      .maybeSingle(),
+    layThongBaoDashboard(session.sub),
+  ]);
+  const mon = Array.isArray(taiKhoan?.mon) ? taiKhoan.mon[0] : taiKhoan?.mon;
   if (!mon) redirect("/soan-cau-hoi");
 
   const laToTruong = mon.to_truong_tai_khoan_id === session.sub;
@@ -45,7 +45,7 @@ export default async function ToTruongLayout({ children }: { children: ReactNode
       brandLabel={laToTruong ? "Tổ trưởng bộ môn" : "Thi thử THPT"}
       brandSub={laToTruong ? `Môn ${mon.ten_mon}` : "Giáo viên"}
       navGroups={navGroups}
-      userId={session.sub}
+      notifications={notifications}
       userName={taiKhoan?.ho_ten ?? (laToTruong ? "Tổ trưởng" : "Giáo viên")}
       userRole={`Môn ${mon.ten_mon}`}
     >

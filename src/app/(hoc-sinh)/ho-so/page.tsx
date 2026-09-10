@@ -18,13 +18,13 @@ import {
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
-import { apDungDemoBypass, demoBypassDangBat, type DemoBypassOverride } from "@/lib/demo/bypass";
+import { apDungDemoBypassTheoBaiLam, demoBypassDangBat, type DemoBypassOverride } from "@/lib/demo/bypass";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 // Khong co dac ta rieng cho trang /ho-so trong FR/UC (chi duoc chot la dich redirect
-// sau dang nhap o walkthrough-phase-1.md#L69). Gia dinh noi dung: ho so co ban + lich
+// sau dang nhap o docs/legacy/walkthrough-phase-1.md#L69). Gia dinh noi dung: ho so co ban + lich
 // thi duoc phan cong (tu bai_lam_thi), moi hang tra theo dung trang_thai DB (khong tu
 // suy doan "dang mo hay khong" tu gio he thong client). Bao lai neu can dac ta khac.
 export default async function HoSoPage() {
@@ -50,15 +50,16 @@ export default async function HoSoPage() {
   const tc1 = Array.isArray(taiKhoan?.monTuChon1) ? taiKhoan.monTuChon1[0] : taiKhoan?.monTuChon1;
   const tc2 = Array.isArray(taiKhoan?.monTuChon2) ? taiKhoan.monTuChon2[0] : taiKhoan?.monTuChon2;
 
-  const overrideTheoCaMon = new Map<string, DemoBypassOverride>();
+  const overrideTheoBaiLam = new Map<string, DemoBypassOverride>();
   if (demoBypassDangBat() && (baiLam?.length ?? 0) > 0) {
     const { data: overrideRows } = await supabase
-      .from("demo_bypass_ca_thi_mon")
-      .select("ca_thi_mon_id,trang_thai,gio_bat_dau,gio_ket_thuc")
-      .in("ca_thi_mon_id", (baiLam ?? []).map((item) => item.ca_thi_mon_id));
+      .from("demo_luot_thi_bai_lam")
+      .select("bai_lam_id,trang_thai_hien_thi,gio_bat_dau,gio_ket_thuc,demo_luot_thi!inner(trang_thai)")
+      .in("bai_lam_id", (baiLam ?? []).map((item) => item.bai_lam_id))
+      .eq("demo_luot_thi.trang_thai", "DangMo");
     for (const row of overrideRows ?? []) {
-      overrideTheoCaMon.set(row.ca_thi_mon_id, {
-        trang_thai: row.trang_thai as DemoBypassOverride["trang_thai"],
+      overrideTheoBaiLam.set(row.bai_lam_id, {
+        trang_thai: row.trang_thai_hien_thi as DemoBypassOverride["trang_thai"],
         gio_bat_dau: row.gio_bat_dau,
         gio_ket_thuc: row.gio_ket_thuc,
       });
@@ -72,13 +73,13 @@ export default async function HoSoPage() {
       const ca = Array.isArray(ctm?.ca_thi) ? ctm.ca_thi[0] : ctm?.ca_thi;
       const dot = Array.isArray(ca?.dot_thi) ? ca.dot_thi[0] : ca?.dot_thi;
       if (!mon || !ca) return null;
-      const lichHieuLuc = apDungDemoBypass(
+      const lichHieuLuc = apDungDemoBypassTheoBaiLam(
         {
           trangThai: ca.trang_thai as string,
           gioBatDau: ca.gio_bat_dau as string,
           gioKetThuc: ca.gio_ket_thuc as string,
         },
-        overrideTheoCaMon.get(b.ca_thi_mon_id)
+        overrideTheoBaiLam.get(b.bai_lam_id)
       );
       return {
         baiLamId: b.bai_lam_id,
@@ -90,6 +91,7 @@ export default async function HoSoPage() {
         gioKetThuc: lichHieuLuc.gioKetThuc,
         trangThaiCa: lichHieuLuc.trangThai,
         tenDotThi: dot?.ten_dot_thi as string | undefined,
+        laDemoBypass: overrideTheoBaiLam.has(b.bai_lam_id),
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
@@ -144,7 +146,6 @@ export default async function HoSoPage() {
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Lịch thi của bạn</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{lich.length} môn trong lịch thi hiện tại</p>
         </div>
         {!lich.length ? (
           <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -193,6 +194,7 @@ type LichItem = {
   gioKetThuc: string;
   trangThaiCa: string;
   tenDotThi?: string;
+  laDemoBypass?: boolean;
 };
 
 type NhomLichThiId = "can-thi-ngay" | "sap-dien-ra" | "da-ket-thuc";
@@ -266,9 +268,9 @@ function NhomLichThi({
 function LichThiRow({ item }: { item: LichItem }) {
   const batDau = new Date(item.gioBatDau);
   const ketThuc = new Date(item.gioKetThuc);
-  const ngay = (value: Date) => value.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-  const gio = (value: Date) => value.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-  const cungNgay = batDau.toLocaleDateString("en-CA") === ketThuc.toLocaleDateString("en-CA");
+  const ngay = (value: Date) => value.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" });
+  const gio = (value: Date) => value.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+  const cungNgay = batDau.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }) === ketThuc.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 
   let action: LichAction;
   if (item.trangThaiBai === "DaNopBai") {
@@ -297,6 +299,11 @@ function LichThiRow({ item }: { item: LichItem }) {
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold text-foreground">{item.tenMon}</h4>
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">Ca {item.soThuTuCa}</span>
+            {item.laDemoBypass && (
+              <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                Lượt thi demo
+              </span>
+            )}
             {item.tenDotThi && <span className="text-xs font-medium text-muted-foreground">{item.tenDotThi}</span>}
           </div>
           <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-4">

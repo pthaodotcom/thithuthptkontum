@@ -6,7 +6,6 @@ import { ChevronRight, GraduationCap, Menu, Sparkles } from "lucide-react";
 import { DashboardNavLink } from "@/components/dashboard/nav-link";
 import LogoutButton from "@/components/dashboard/logout-button";
 import { NotificationMenu, type ThongBaoItem } from "@/components/dashboard/notification-menu";
-import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 
 export type DashboardNavItem = { href: string; label: string; icon: LucideIcon };
 export type DashboardNavGroup = { label?: string; items: DashboardNavItem[] };
@@ -35,23 +34,18 @@ function Navigation({ navGroups, label }: { navGroups: DashboardNavGroup[]; labe
   );
 }
 
-export async function DashboardShell({
-  brandLabel, brandSub, navGroups, userId, userName, userRole, children,
+export function DashboardShell({
+  brandLabel, brandSub, navGroups, notifications, userName, userRole, children,
 }: {
   brandLabel: string;
   brandSub?: string;
   navGroups: DashboardNavGroup[];
-  userId: string;
+  notifications: ThongBaoItem[];
   userName: string;
   userRole: string;
   children: ReactNode;
 }) {
   const initial = userName.trim().charAt(0).toUpperCase() || "?";
-  const supabase = taoSupabaseServiceRole();
-  const { data: notificationData } = await supabase.from("thong_bao_noi_bo")
-    .select("id,tieu_de,noi_dung,duong_dan,da_doc,created_at")
-    .eq("nguoi_nhan_tai_khoan_id", userId).order("created_at", { ascending: false }).limit(12);
-  const notifications = (notificationData || []) as ThongBaoItem[];
 
   return (
     <div className="min-h-screen bg-background text-foreground lg:flex">
@@ -76,6 +70,7 @@ export async function DashboardShell({
         <div className="border-t border-border/70 bg-muted/30 p-3">
           <Link
             href="/thong-tin-tai-khoan"
+            prefetch={false}
             aria-label="Xem thông tin tài khoản cá nhân"
             className="group mb-2.5 flex min-h-12 cursor-pointer items-center gap-2.5 rounded-lg bg-card px-2 py-1.5 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -110,6 +105,7 @@ export async function DashboardShell({
             <div className="absolute right-0 mt-2 max-h-[calc(100vh-5rem)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-border bg-card p-3 shadow-2xl">
               <Link
                 href="/thong-tin-tai-khoan"
+                prefetch={false}
                 aria-label="Xem thông tin tài khoản cá nhân"
                 className="group mb-3 flex min-h-14 cursor-pointer items-center gap-3 rounded-xl bg-muted/60 p-3 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >

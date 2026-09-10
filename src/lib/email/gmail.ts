@@ -29,6 +29,14 @@ export function chuanHoaEmail(value?: string | null) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
+export function layTenNguoiGui(): string {
+  const raw = process.env.GMAIL_FROM_NAME?.trim();
+  if (!raw || raw.includes("?")) {
+    return "Hệ thống Thi thử THPT";
+  }
+  return raw;
+}
+
 export function layCauHinhGmail(): CauHinhGmail {
   const enabled = process.env.EMAIL_ENABLED === "true";
   const user = chuanHoaEmail(process.env.GMAIL_SMTP_USER);
@@ -43,33 +51,76 @@ export function layCauHinhGmail(): CauHinhGmail {
     enabled,
     user,
     pass,
-    fromName: process.env.GMAIL_FROM_NAME?.trim() || "Hệ thống Thi thử THPT",
+    fromName: layTenNguoiGui(),
     replyTo,
   };
 }
 
+export function tachCacDongNhanXet(nhanXet?: string | null): string[] {
+  if (!nhanXet || !nhanXet.trim()) return [];
+  const voiXuongDong = nhanXet.trim()
+    .replace(/(?:^|\s*)(Điểm bài thi:[^\n]*)/gi, "\n$1\n")
+    .replace(/(?:^|\s*)(Nhận xét chung|Nhận xét|Đánh giá chung):/gi, "\n$1:")
+    .replace(/(?:^|\s*)(Nội dung nên ôn|Nội dung cần ôn|Cần ôn thêm|Cần củng cố|Định hướng ôn tập):/gi, "\n$1:")
+    .trim();
+
+  return voiXuongDong
+    .split(/\r?\n/)
+    .map((dong) => dong.trim())
+    .filter(Boolean);
+}
+
 export function taoNoiDungEmail(input: DuLieuEmailKetQua) {
-  const tieuDe = `Kết quả thi thử môn ${input.mon} - ${input.hoTen}`;
+  const tieuDe = `[Thi thử THPT] Kết quả môn ${input.mon} của ${input.hoTen}`;
+  const dongNhanXet = tachCacDongNhanXet(input.nhanXet);
   const text = [
     `Kính gửi Phụ huynh em ${input.hoTen},`,
-    `Kết quả ${input.dotThi} - môn ${input.mon}: ${input.diem.toFixed(2)}/10.`,
-    `Nhóm năng lực: ${input.nhom}.`,
-    input.nhanXet,
+    `Nhà trường gửi kết quả ${input.dotThi} của em ${input.hoTen}.`,
+    `Môn ${input.mon}: ${input.diem.toFixed(2)}/10 (${input.nhom}).`,
+    `Nhận xét:\n${dongNhanXet.length > 0 ? dongNhanXet.join("\n") : input.nhanXet}`,
     `Xem báo cáo chi tiết: ${input.lienKetBaoCao}`,
+    "Đây là email tự động từ Hệ thống Thi thử THPT của nhà trường. Email không chứa đáp án hoặc thông tin đăng nhập.",
   ].join("\n\n");
   const escape = (value: string) => value.replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[char]!);
-  const html = `<main style="font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#172033">
-    <h1 style="color:#0f766e;font-size:22px">Kết quả thi thử</h1>
-    <p>Kính gửi Phụ huynh em <strong>${escape(input.hoTen)}</strong>,</p>
-    <p>Kết quả <strong>${escape(input.dotThi)}</strong> - môn <strong>${escape(input.mon)}</strong>:
-      <strong>${input.diem.toFixed(2)}/10</strong>.</p>
-    <p>Nhóm năng lực: <strong>${escape(input.nhom)}</strong>.</p>
-    <div style="background:#f0fdfa;border-left:4px solid #0f766e;padding:12px">${escape(input.nhanXet)}</div>
-    <p><a href="${escape(input.lienKetBaoCao)}">Xem báo cáo chi tiết</a></p>
-    <p style="font-size:12px;color:#64748b">Email tự động, không chứa đáp án hoặc thông tin đăng nhập.</p>
-  </main>`;
+
+  const nhanXetHtml = dongNhanXet.length > 0
+    ? dongNhanXet.map((dong) => {
+        const escaped = escape(dong);
+        const dongCoDam = escaped.replace(
+          /^(Điểm bài thi:[^\s]+|Nhận xét chung:|Nhận xét:|Đánh giá chung:|Nội dung nên ôn:|Nội dung cần ôn:|Cần ôn thêm:|Cần củng cố:|Định hướng ôn tập:)/i,
+          "<strong>$1</strong>",
+        );
+        return `<p style="margin:0 0 8px;line-height:1.6;color:#334155">${dongCoDam}</p>`;
+      }).join("")
+    : `<p style="margin:0;font-size:15px;line-height:1.6;color:#334155">${escape(input.nhanXet)}</p>`;
+
+  const html = `<!doctype html>
+<html lang="vi"><body style="margin:0;padding:0;background:#f1f5f9;color:#172033;font-family:Arial,'Helvetica Neue',sans-serif">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding:28px 12px;background:#f1f5f9"><tr><td align="center">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(15,23,42,.10)">
+      <tr><td style="padding:28px 32px;background:#0f4c5c;color:#ffffff">
+        <p style="margin:0 0 7px;font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#f8d77b">Hệ thống Thi thử THPT</p>
+        <h1 style="margin:0;font-size:25px;line-height:1.3">Kết quả học tập của học sinh</h1>
+      </td></tr>
+      <tr><td style="padding:30px 32px 12px">
+        <p style="margin:0 0 16px;font-size:16px;line-height:1.6">Kính gửi Phụ huynh em <strong>${escape(input.hoTen)}</strong>,</p>
+        <p style="margin:0;font-size:15px;line-height:1.65;color:#475569">Nhà trường gửi kết quả <strong>${escape(input.dotThi)}</strong> của em để gia đình cùng theo dõi và hỗ trợ việc ôn tập.</p>
+      </td></tr>
+      <tr><td style="padding:16px 32px">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc"><tr>
+          <td style="padding:18px 20px;border-right:1px solid #cbd5e1"><p style="margin:0 0 5px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Môn thi</p><p style="margin:0;font-size:18px;font-weight:700;color:#0f172a">${escape(input.mon)}</p></td>
+          <td align="center" style="padding:18px 20px"><p style="margin:0 0 5px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Điểm số</p><p style="margin:0;font-size:26px;font-weight:700;color:#0f766e">${input.diem.toFixed(2)}<span style="font-size:15px">/10</span></p></td>
+          <td style="padding:18px 20px;border-left:1px solid #cbd5e1"><p style="margin:0 0 5px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Nhóm năng lực</p><p style="margin:0;font-size:18px;font-weight:700;color:#0f172a">${escape(input.nhom)}</p></td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:8px 32px 16px"><div style="padding:16px 18px;border-left:4px solid #0f766e;background:#f0fdfa;border-radius:0 8px 8px 0"><p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.5px">Nhận xét</p>${nhanXetHtml}</div></td></tr>
+      <tr><td align="center" style="padding:8px 32px 32px"><a href="${escape(input.lienKetBaoCao)}" style="display:inline-block;padding:13px 22px;border-radius:8px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none">Xem báo cáo chi tiết</a></td></tr>
+      <tr><td style="padding:20px 32px;background:#f8fafc;border-top:1px solid #e2e8f0"><p style="margin:0;font-size:12px;line-height:1.55;color:#64748b">Đây là email tự động từ Hệ thống Thi thử THPT của nhà trường. Email không chứa đáp án hoặc thông tin đăng nhập.</p></td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
   return { tieuDe, text, html };
 }
 
@@ -86,20 +137,30 @@ export function phanLoaiLoiEmail(error: unknown): Exclude<KetQuaGuiEmail, { than
   };
 }
 
-function taoRawGmailApi(input: { from: string; fromName: string; replyTo?: string; to: string; subject: string; text: string; html: string }) {
-  const boundary = `thi-thu-${Date.now().toString(36)}`;
-  const subject = `=?UTF-8?B?${Buffer.from(input.subject).toString("base64")}?=`;
-  const fromName = `=?UTF-8?B?${Buffer.from(input.fromName).toString("base64")}?=`;
-  const lines = [
-    `From: ${fromName} <${input.from}>`, `To: ${input.to}`, `Subject: ${subject}`,
-    ...(input.replyTo ? [`Reply-To: ${input.replyTo}`] : []),
-    "MIME-Version: 1.0", `Content-Type: multipart/alternative; boundary="${boundary}"`, "",
-    `--${boundary}`, "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "",
-    Buffer.from(input.text).toString("base64"), "",
-    `--${boundary}`, "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "",
-    Buffer.from(input.html).toString("base64"), "", `--${boundary}--`,
-  ];
-  return Buffer.from(lines.join("\r\n")).toString("base64url");
+async function taoRawGmailApi(input: {
+  from: string;
+  fromName: string;
+  replyTo?: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<string> {
+  const streamTransporter = nodemailer.createTransport({
+    streamTransport: true,
+    buffer: true,
+  });
+
+  const info = await streamTransporter.sendMail({
+    from: { name: input.fromName, address: input.from },
+    to: input.to,
+    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
+  });
+
+  return (info.message as Buffer).toString("base64url");
 }
 
 async function guiQuaGmailApi(email: string, noiDung: ReturnType<typeof taoNoiDungEmail>): Promise<KetQuaGuiEmail> {
@@ -108,14 +169,19 @@ async function guiQuaGmailApi(email: string, noiDung: ReturnType<typeof taoNoiDu
     const token = await layAccessTokenGmail();
     const sender = chuanHoaEmail(process.env.GMAIL_SENDER_EMAIL);
     if (!sender) throw new Error("GMAIL_SENDER_EMAIL_CHUA_CAU_HINH");
+    const raw = await taoRawGmailApi({
+      from: sender,
+      fromName: layTenNguoiGui(),
+      replyTo: chuanHoaEmail(process.env.GMAIL_REPLY_TO) ?? undefined,
+      to: email,
+      subject: noiDung.tieuDe,
+      text: noiDung.text,
+      html: noiDung.html,
+    });
     const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({ raw: taoRawGmailApi({
-        from: sender, fromName: process.env.GMAIL_FROM_NAME?.trim() || "Hệ thống Thi thử THPT",
-        replyTo: chuanHoaEmail(process.env.GMAIL_REPLY_TO) ?? undefined,
-        to: email, subject: noiDung.tieuDe, text: noiDung.text, html: noiDung.html,
-      }) }),
+      body: JSON.stringify({ raw }),
     });
     const body = await response.json() as { id?: string; error?: { message?: string } };
     if (!response.ok || !body.id) {

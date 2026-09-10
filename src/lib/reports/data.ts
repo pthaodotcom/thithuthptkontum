@@ -1,6 +1,7 @@
 import { laySessionHienHanh } from "@/lib/auth/session";
 import { taoSupabaseServiceRole } from "@/lib/supabase/server";
 import { xepNhomNangLuc } from "@/lib/rules/ky-thi";
+import { layPhamViBaoCao } from "@/lib/reports/tuy-chon";
 
 export type ReportRow = {
   baiLamId: string;
@@ -73,28 +74,19 @@ export async function layBaoCao(filters: { lopId?: string; monId?: string; caThi
   const session = await laySessionHienHanh();
   if (!session || !["Admin", "GiaoVien"].includes(session.vai_tro)) throw new Error("KHONG_CO_QUYEN");
   const supabase = taoSupabaseServiceRole();
-  let lopDuocXem: Set<string> | null = null;
-  let monBatBuoc: string | null = null;
-
-  if (session.vai_tro === "GiaoVien") {
-    const [{ data: gv }, { data: boNhiem }] = await Promise.all([
-      supabase.from("tai_khoan").select("mon_id").eq("tai_khoan_id", session.sub).single(),
-      supabase.from("mon").select("mon_id").eq("to_truong_tai_khoan_id", session.sub).maybeSingle(),
-    ]);
-    monBatBuoc = boNhiem?.mon_id || gv?.mon_id || null;
-    if (!boNhiem) {
-      const { data: phanCong } = await supabase.from("phan_cong_giang_day").select("lop_id").eq("giao_vien_tai_khoan_id", session.sub);
-      lopDuocXem = new Set((phanCong || []).map((x) => x.lop_id));
-    }
-  }
+  const { monBatBuoc, lopDuocXem } = await layPhamViBaoCao();
   if (filters.monId && monBatBuoc && filters.monId !== monBatBuoc) throw new Error("KHONG_CO_QUYEN_MON");
   if (filters.lopId && lopDuocXem && !lopDuocXem.has(filters.lopId)) throw new Error("KHONG_CO_QUYEN_LOP");
 
   let query = supabase.from("bai_lam_thi")
-    .select("bai_lam_id,hoc_sinh_tai_khoan_id,diem_tong,so_cau_dung,so_cau_sai,thoi_diem_nop,tai_khoan!bai_lam_thi_hoc_sinh_tai_khoan_id_fkey(ma_so,ho_ten,lop_id,lop(ten_lop,khoi)),ca_thi_mon!inner(mon_id,mon(ten_mon),ca_thi!inner(dot_thi!inner(ten_dot_thi))),vi_pham(id,loai_vi_pham,thoi_diem)")
+    .select("bai_lam_id,hoc_sinh_tai_khoan_id,diem_tong,so_cau_dung,so_cau_sai,thoi_diem_nop,tai_khoan!bai_lam_thi_hoc_sinh_tai_khoan_id_fkey!inner(ma_so,ho_ten,lop_id,lop(ten_lop,khoi)),ca_thi_mon!inner(mon_id,mon(ten_mon),ca_thi!inner(dot_thi!inner(ten_dot_thi))),vi_pham(id,loai_vi_pham,thoi_diem)")
     .eq("trang_thai", "DaNopBai")
     .not("diem_tong", "is", null)
     .order("thoi_diem_nop", { ascending: false });
+  if (monBatBuoc) query = query.eq("ca_thi_mon.mon_id", monBatBuoc);
+  if (filters.monId) query = query.eq("ca_thi_mon.mon_id", filters.monId);
+  if (filters.lopId) query = query.eq("tai_khoan.lop_id", filters.lopId);
+  if (lopDuocXem) query = query.in("tai_khoan.lop_id", Array.from(lopDuocXem));
   if (filters.caThiMonId) query = query.eq("ca_thi_mon_id", filters.caThiMonId);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -108,10 +100,6 @@ export async function layBaoCao(filters: { lopId?: string; monId?: string; caThi
     const ca = Array.isArray(ctm?.ca_thi) ? ctm.ca_thi[0] : ctm?.ca_thi;
     const dot = Array.isArray(ca?.dot_thi) ? ca.dot_thi[0] : ca?.dot_thi;
     if (!tk || !ctm || !mon) continue;
-    if (monBatBuoc && ctm.mon_id !== monBatBuoc) continue;
-    if (lopDuocXem && (!tk.lop_id || !lopDuocXem.has(tk.lop_id))) continue;
-    if (filters.monId && ctm.mon_id !== filters.monId) continue;
-    if (filters.lopId && tk.lop_id !== filters.lopId) continue;
     const diem = Number(raw.diem_tong);
     const viPham = [...(raw.vi_pham || [])].sort((a, b) => Date.parse(b.thoi_diem) - Date.parse(a.thoi_diem));
     rows.push({

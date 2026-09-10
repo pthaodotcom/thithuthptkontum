@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { GraduationCap, ShieldCheck, Timer, ClipboardCheck } from "lucide-react";
 
 const diemNhan = [
@@ -20,19 +21,29 @@ export function AuthShell({
     <div className="relative flex min-h-screen overflow-hidden bg-background">
       {/* Bảng thương hiệu — chỉ hiện trên màn hình rộng */}
       <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-primary px-12 py-12 text-primary-foreground lg:flex xl:px-16 xl:py-14">
+        <Image
+          src="/truong-thpt-kon-tum.png"
+          alt="Sân trường trong lễ khai giảng"
+          fill
+          priority
+          sizes="(min-width: 1280px) 46vw, 46vw"
+          className="object-cover"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-primary/55" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/45 to-primary/20" aria-hidden="true" />
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          className="pointer-events-none absolute inset-0 z-[1] opacity-[0.07]"
           style={{
             backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
         <div
-          className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full border border-gold/30"
+          className="pointer-events-none absolute -right-24 -top-24 z-[1] h-80 w-80 rounded-full border border-gold/30"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full border border-primary-foreground/10"
+          className="pointer-events-none absolute -bottom-32 -left-16 z-[1] h-80 w-80 rounded-full border border-primary-foreground/10"
           aria-hidden
         />
 

@@ -1,6 +1,6 @@
 # Phase 6 - Ma trận nghiệm thu
 
-Nguồn truy vết: `../3.2_Khung_yeu_cau_chuc_nang.md` (22 FR) và
+Nguồn truy vết: `3.2_Khung_yeu_cau_chuc_nang.md` (22 FR) và
 `../use-case-v4/07-Validation-Report-vi.md` (31 UC).
 
 ## Cổng tự động
