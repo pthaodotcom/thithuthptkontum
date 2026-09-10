@@ -29,3 +29,12 @@ supabase/.temp/
 
 .vercel
 .env*
+*.docx
+~$*
+.tmp*
+scripts/export_supabase_schema_description.py
+scripts/generate_docx_script.py
+docs/KICH_BAN_DEMO_5_PHUT.*
+supabase/migrations/0043*
+supabase/migrations/0044*
+supabase/rollback/
