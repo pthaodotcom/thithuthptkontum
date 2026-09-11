@@ -1,8 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 
 /**
- * Ky/xac minh JWT tuong thich Supabase RLS ("bring your own auth" - xem
- * ke-hoach-trien-khai-webapp.md muc 2). Dung CHUNG SUPABASE_JWT_SECRET voi
+ * Ky/xac minh JWT tuong thich Supabase RLS ("bring your own auth"). Dung
+ * CHUNG SUPABASE_JWT_SECRET voi cau hinh JWT trong Supabase va voi
  * project Supabase (Project Settings > API > JWT Settings) de auth.jwt() /
  * jwt_claim() trong RLS doc duoc dung claim.
  *

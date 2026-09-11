@@ -1,82 +1,108 @@
-# Webapp — Hệ thống Thi thử Trực tuyến cấp Trường THPT
+# Hệ thống Thi thử THPT Kon Tum
 
-Scaffold ban đầu (Next.js + Supabase + Gemini). Xem:
-- `docs/legacy/ke-hoach-trien-khai-webapp.md` — roadmap đầy đủ, kiến trúc, lý do chọn công nghệ.
-- `CLAUDE.md` — rule bắt buộc khi code trong thư mục này.
-- `docs/legacy/3.2_Khung_yeu_cau_chuc_nang.md` + `../use-case-v3/` — nguồn nghiệp vụ gốc.
+Ứng dụng web hỗ trợ tổ chức thi thử trực tuyến ở cấp trường. Hệ thống phục vụ quản trị viên, giáo viên, tổ trưởng bộ môn và học sinh trong các công việc quản lý ngân hàng câu hỏi, tổ chức ca thi, làm bài và theo dõi kết quả.
 
-## 1. Tạo tài khoản & project (làm 1 lần)
+> Đây là mã nguồn ứng dụng, không bao gồm kế hoạch triển khai, tài liệu nội bộ, dữ liệu phát sinh hoặc công cụ xử lý dữ liệu một lần.
 
-### Supabase
-1. Tạo tài khoản tại supabase.com, tạo **New project** (chọn region gần Việt Nam, ví dụ Singapore).
-2. Vào **Project Settings → API**, lấy 3 giá trị:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public key` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role key` (bấm "Reveal") → `SUPABASE_SERVICE_ROLE_KEY` — **giữ bí mật tuyệt đối, không commit, không đưa vào code client**.
-3. Vào **Project Settings → API → JWT Settings**, lấy `JWT Secret` → `SUPABASE_JWT_SECRET` (dùng để tự ký JWT đăng nhập — xem mục 2 của kế hoạch triển khai).
-4. Chạy migration (xem mục 3 bên dưới).
+## Chức năng chính
 
-### Vercel
-1. Tạo tài khoản tại vercel.com, **Import Project** từ repo GitHub chứa thư mục `webapp/` (đặt Root Directory = `du-an-thi-thu-thpt/webapp` khi import nếu repo là monorepo).
-2. Vào **Project Settings → Environment Variables**, khai đủ các biến trong `.env.example` (Production + Preview).
-3. **Vercel Cron cần plan trả phí (Pro) để chạy dưới 1 lần/ngày** — dự án này cần cron mỗi 1 phút (`vercel.json`). Nếu đang dùng Hobby plan, tạm thời tăng khoảng cách cron hoặc dùng dịch vụ cron ngoài (cron-job.org gọi vào route có `CRON_SECRET`) cho tới khi nâng cấp plan.
+- Quản lý tài khoản, lớp học, môn học, tổ trưởng bộ môn, đợt thi và ca thi.
+- Soạn, duyệt, yêu cầu chỉnh sửa và quản lý ngân hàng câu hỏi theo môn.
+- Tạo đề, phát hành cho ca thi và hỗ trợ học sinh làm bài trực tuyến với tự động lưu/nộp bài.
+- Chấm điểm, ghi nhận vi phạm trong khi thi và theo dõi ca thi cho quản trị viên.
+- Báo cáo theo học sinh, lớp, môn; xuất dữ liệu và tạo nhận xét học tập khi đã cấu hình Gemini.
+- Gửi email thông báo khi đã cấu hình nhà cung cấp email.
 
-### Gemini API (FR-M6-02)
-1. Vào aistudio.google.com/apikey, tạo API key → `GEMINI_API_KEY`.
-2. Kiểm tra model đang ở trạng thái GA (Generally Available) mới nhất tại ai.google.dev trước khi deploy Phase 5 — đặt tên model vào `GEMINI_MODEL` (mặc định gợi ý: `gemini-3.5-flash`, phù hợp cho tác vụ sinh văn bản tiếng Việt ngắn, chi phí thấp). Google cập nhật model thường xuyên, không hardcode trong code.
+## Công nghệ
 
-### Gmail SMTP (FR-M5-07)
-1. Bật xác minh hai bước cho tài khoản Gmail dùng để gửi.
-2. Tạo App Password và cấu hình `GMAIL_SMTP_USER`, `GMAIL_APP_PASSWORD`.
-3. Giữ `EMAIL_ENABLED=false` khi dev/demo để chỉ ghi log; bật `true` sau khi gửi thử thành công.
-4. App Password có thể nhập liền 16 ký tự hoặc có khoảng trắng; ứng dụng tự chuẩn hóa. Không dùng mật khẩu đăng nhập Gmail thông thường.
-5. Khi bật gửi thật, cấu hình thiếu/sai được coi là lỗi không thể retry để tránh cron thử vô ích; Admin có thể sửa cấu hình rồi bấm **Thử lại** trong `/thong-bao-email`.
-6. Luôn gửi thử tới một hộp thư kiểm thử trước. Sau khi nhận được thư và kiểm tra liên kết báo cáo, mới bật `EMAIL_ENABLED=true` ở Production.
+- Next.js 15, React 19 và TypeScript
+- Tailwind CSS
+- Supabase/PostgreSQL (migrations, RPC và Row Level Security)
+- Vitest, Playwright và k6 cho kiểm thử
 
-## 2. Chạy dự án local
+## Yêu cầu
 
-```bash
-npm install
-cp .env.example .env.local
-# dien cac gia tri that vao .env.local
+- Node.js 20 trở lên
+- Một dự án Supabase
+- Supabase CLI nếu cần áp dụng migrations từ dòng lệnh
+
+## Chạy trên máy local
+
+```powershell
+npm ci
+Copy-Item .env.example .env.local
+# Điền các giá trị của dự án Supabase vào .env.local
 npm run dev
 ```
 
-Cần cài Supabase CLI (`npm install -g supabase` hoặc theo hướng dẫn chính thức) nếu muốn chạy Supabase local (`supabase start`) thay vì trỏ thẳng vào project cloud khi dev.
+Mở [http://localhost:3000](http://localhost:3000). Tệp `.env.local` chứa khóa bí mật và không được commit.
 
-## 3. Chạy migration database
+## Cấu hình môi trường
 
-Cách đơn giản nhất (không cần Supabase CLI): mở **Supabase Dashboard → SQL Editor**, copy nội dung từng file theo đúng thứ tự và chạy:
+Sao chép `.env.example` để xem đầy đủ biến cần thiết. Nhóm cấu hình chính:
 
-1. `supabase/migrations/0001_init_schema.sql` (27 bảng)
-2. `supabase/migrations/0002_rls_policies.sql` (RLS)
-3. `supabase/migrations/0003_seed_dev.sql` (dữ liệu mẫu — **chỉ chạy ở project dev/test**, không chạy ở production; nhớ thay `mat_khau_hash` placeholder bằng hash bcrypt thật trước khi dùng)
+| Nhóm | Biến |
+| --- | --- |
+| Supabase | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` |
+| Phiên đăng nhập | `SESSION_COOKIE_SECRET` |
+| Nhận xét học tập | `GEMINI_API_KEY`, `GEMINI_MODEL` |
+| Email | `EMAIL_PROVIDER`, `GMAIL_SENDER_EMAIL` hoặc cấu hình SMTP |
+| Cron | `CRON_SECRET` |
 
-Hoặc dùng Supabase CLI:
-```bash
-supabase link --project-ref <project-id>
-supabase db push
+Không đưa service role key, JWT secret, mật khẩu email hay bất kỳ tệp `.env*` nào lên GitHub.
+
+## Cơ sở dữ liệu
+
+Migrations được lưu tại `supabase/migrations` và phải được áp dụng theo thứ tự. Với Supabase CLI:
+
+```powershell
+npx supabase login
+npx supabase link --project-ref <project-ref>
+npx supabase db push
 ```
 
-## 4. Sinh type TypeScript từ schema
+`0003_seed_dev.sql` chỉ dành cho môi trường development/test. Không dùng dữ liệu seed hoặc các script fixture trên cơ sở dữ liệu production.
 
-```bash
+Khi schema thay đổi, có thể tạo lại kiểu TypeScript:
+
+```powershell
 npm run supabase:types
 ```
-(cần biến môi trường `SUPABASE_PROJECT_ID` và đã `supabase login`)
 
-## 5. Trạng thái hiện tại
+## Kiểm thử và kiểm tra chất lượng
 
-Phase 0-5 đã có triển khai chức năng: auth/RLS, danh mục và người dùng, ngân hàng câu hỏi/đề thi, đợt và ca thi, làm bài/giám sát, báo cáo PDF/Excel, nhận xét Gemini có fallback và email stub. Phase 6 đang tiếp tục với kiểm thử tích hợp, E2E, tải và rà soát bảo mật trên project Supabase dev.
+```powershell
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
 
-Khi không cấu hình `GEMINI_API_KEY` hoặc API tạm thời lỗi, hàng đợi thử lại tối đa 3 lần rồi sinh nhận xét mẫu; vì vậy có thể tiếp tục kiểm thử toàn bộ luồng mà không lưu key trong repo.
+E2E và load test cần một môi trường Supabase development/test đã cấu hình biến môi trường tương ứng. Các lệnh `fixtures:*` chỉ tạo và dọn dữ liệu kiểm thử có định danh riêng; không chạy chúng trên production.
 
-### Phát hiện câu hỏi trùng
+```powershell
+npm run fixtures:m4
+npm run test:e2e:offline
+npm run test:e2e:realtime
+npm run test:load:m4:node
+```
 
-Chức năng phát hiện trùng không gọi Gemini hoặc dịch vụ AI. Migration `0040_question_duplicate_detection.sql` dùng SHA-256 và PostgreSQL `pg_trgm`; câu Toán chỉ thay số được gắn nhãn “Cùng dạng – khác số” thay vì tự động coi là trùng.
+## Cấu trúc mã nguồn
 
-- `QUESTION_TEXT_SIMILARITY_THRESHOLD`: ngưỡng cảnh báo gần giống nội dung, mặc định thử nghiệm `0.72`.
-- `QUESTION_TEMPLATE_SIMILARITY_THRESHOLD`: ngưỡng cảnh báo cùng mẫu câu, mặc định thử nghiệm `0.84`.
-- Sau khi chạy migration, chạy `npm.cmd run fingerprints:backfill` để tạo dấu vân cho câu hỏi cũ.
+```text
+src/                 Giao diện Next.js, API routes và nghiệp vụ ứng dụng
+src/lib/             Xác thực, Supabase, chấm điểm, báo cáo, email và AI
+supabase/migrations/ Lịch sử thay đổi schema và logic PostgreSQL
+supabase/tests/      Kiểm thử SQL
+tests/               Unit, E2E và load tests
+scripts/             Script maintenance và fixture đang được npm scripts sử dụng
+public/              Tài nguyên tĩnh
+```
 
-Hai ngưỡng trên chỉ phục vụ cảnh báo và cần hiệu chỉnh bằng tập câu hỏi đã được giáo viên gán nhãn. Tổ trưởng vẫn là người xác nhận cuối cùng; hệ thống không tự động xóa hoặc từ chối câu hỏi gần giống.
+## Triển khai
+
+Ứng dụng có thể triển khai trên Vercel hoặc một môi trường Node.js tương thích Next.js. Khai báo đầy đủ biến môi trường trong nền tảng triển khai trước khi build; không sao chép `.env.local` lên môi trường công khai.
+
+## Đóng góp
+
+Trước khi mở pull request, hãy chạy `npm run typecheck`, `npm run lint` và `npm test`. Với thay đổi database, thêm một migration mới; không chỉnh sửa migration đã được áp dụng ở môi trường dùng chung.

@@ -476,8 +476,8 @@ create table zns_log (
 );
 
 -- =====================================================================
--- Bo sung ha tang (KHONG thuoc 27 bang nghiep vu goc) - xem Muc 3 trong
--- ke-hoach-trien-khai-webapp.md: hang doi job cho cac tac vu co SLA/retry
+-- Bo sung ha tang (KHONG thuoc 27 bang nghiep vu goc).
+-- Hang doi job cho cac tac vu co SLA/retry
 -- (FR-M4-03, FR-M6-01, FR-M6-02, FR-M6-06) ma Vercel serverless khong the
 -- tu giu tien trinh nen de cho.
 -- =====================================================================

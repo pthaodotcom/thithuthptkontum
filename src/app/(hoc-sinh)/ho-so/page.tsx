@@ -23,10 +23,8 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// Khong co dac ta rieng cho trang /ho-so trong FR/UC (chi duoc chot la dich redirect
-// sau dang nhap o docs/legacy/walkthrough-phase-1.md#L69). Gia dinh noi dung: ho so co ban + lich
-// thi duoc phan cong (tu bai_lam_thi), moi hang tra theo dung trang_thai DB (khong tu
-// suy doan "dang mo hay khong" tu gio he thong client). Bao lai neu can dac ta khac.
+// Trang ho so hien thi thong tin tai khoan va lich thi da duoc phan cong. Trang thai
+// cua tung hang duoc lay tu database, khong suy doan tu gio he thong o client.
 export default async function HoSoPage() {
   const session = await laySessionHienHanh();
   if (!session || session.vai_tro !== "HocSinh") redirect("/dang-nhap");

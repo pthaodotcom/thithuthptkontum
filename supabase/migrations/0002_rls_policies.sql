@@ -1,6 +1,6 @@
 -- =====================================================================
 -- 0002_rls_policies.sql
--- Row Level Security - lop phong thu CHINH cho du lieu (xem CLAUDE.md muc
+-- Row Level Security - lop phong thu CHINH cho du lieu (xem ghi chu
 -- "RLS la lop phong thu chinh, UI chi la lop phu").
 --
 -- Kien truc auth: khong dung Supabase Auth (GoTrue). Server tu ky JWT bang

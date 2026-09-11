@@ -13,6 +13,6 @@ enabled = true
 port = 54323
 
 # Luu y: du an nay KHONG dung module [auth] cua Supabase CLI (GoTrue) - xem
-# ke-hoach-trien-khai-webapp.md muc 2 ve co che auth tu viet (ma so + mat khau).
+# co che auth tu viet (ma so + mat khau).
 [auth]
 enabled = false

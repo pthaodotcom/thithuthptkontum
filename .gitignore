@@ -1,40 +1,38 @@
+# Dependencies and build output
 node_modules/
 .next*/
 out/
 build/
+*.tsbuildinfo
+
+# Local secrets
 .env
 .env.local
+.env.*.local
+!.env.example
+
+# Hosting and test output
 .vercel/
-*.tsbuildinfo
 coverage/
 playwright-report/
 test-results/
 
-# Local reference artifacts: generated import data and UI captures.
-/artifacts/
-/docs/screenshots/
-/docs/SCREENSHOTS.md
-
-# Local AI/tooling and generated artifacts
+# Local tooling and generated artifacts
 .artifact-runtime/
 .claude/
 .docx-render/
+artifacts/
+/docs/
 tmp/
+supabase/.temp/
 *.log
+*.tmp
+~$*
 
-# Local assistant instructions and Supabase CLI state
+# Local assistant instructions and unpublished database experiments
 CLAUDE.md
 GEMINI.md
-supabase/.temp/
-
-.vercel
-.env*
-*.docx
-~$*
-.tmp*
 scripts/export_supabase_schema_description.py
-scripts/generate_docx_script.py
-docs/KICH_BAN_DEMO_5_PHUT.*
 supabase/migrations/0043*
 supabase/migrations/0044*
 supabase/rollback/
