@@ -15,13 +15,6 @@
     "test:e2e:realtime": "playwright test tests/e2e/realtime.smoke.spec.ts",
     "test:load:m4": "k6 run tests/load/m4-smoke.k6.js",
     "test:load:m4:node": "node --env-file=.env.local tests/load/m4-light-load.mjs",
-    "fixtures:m4": "node --env-file=.env.local scripts/prepare-m4-fixtures.mjs",
-    "fixtures:m5:setup": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs setup",
-    "fixtures:m5:advance": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs advance",
-    "fixtures:m5:status": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs status",
-    "fixtures:m5:cleanup": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs cleanup",
-    "fixtures:m5:retrigger": "node --env-file=.env.local scripts/m5-pipeline-fixture.mjs retrigger",
-    "fingerprints:backfill": "node --env-file=.env.local node_modules/vite-node/vite-node.mjs scripts/backfill-question-fingerprints.ts",
     "supabase:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > src/types/database.ts"
   },
   "dependencies": {

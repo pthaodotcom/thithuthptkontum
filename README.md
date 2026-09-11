@@ -78,10 +78,9 @@ npm test
 npm run build
 ```
 
-E2E và load test cần một môi trường Supabase development/test đã cấu hình biến môi trường tương ứng. Các lệnh `fixtures:*` chỉ tạo và dọn dữ liệu kiểm thử có định danh riêng; không chạy chúng trên production.
+E2E và load test cần một môi trường Supabase development/test đã được cấu hình biến môi trường và dữ liệu kiểm thử tương ứng. Không chạy các kiểm thử này trên production.
 
 ```powershell
-npm run fixtures:m4
 npm run test:e2e:offline
 npm run test:e2e:realtime
 npm run test:load:m4:node
@@ -95,7 +94,6 @@ src/lib/             Xác thực, Supabase, chấm điểm, báo cáo, email và
 supabase/migrations/ Lịch sử thay đổi schema và logic PostgreSQL
 supabase/tests/      Kiểm thử SQL
 tests/               Unit, E2E và load tests
-scripts/             Script maintenance và fixture đang được npm scripts sử dụng
 public/              Tài nguyên tĩnh
 ```
 
